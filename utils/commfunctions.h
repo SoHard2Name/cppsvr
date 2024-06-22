@@ -9,6 +9,7 @@
 namespace utility {
 
 std::string StrFormat(const char *format, ...);
+
 std::string StrFormat(const char *format, va_list args);
 
 long GetPid();
