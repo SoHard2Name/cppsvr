@@ -43,8 +43,7 @@ void Logger::CloseFile() {
 }
 
 void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char *sFormat, ...) {
-	std::cout << "DBG: begin Log()" << std::endl;
-	if (m_eLevel > eLevel)return; // 等级低于日志等级的消息不做记录
+	if (m_eLevel > eLevel) return; // 等级低于日志等级的消息不做记录
 	if (m_oOutFileStream.fail()) {
 		throw std::logic_error("open log file failed: " + m_sFileName);
 	}
@@ -52,14 +51,12 @@ void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char 
 	
 	// 时间 [等级] 文件名:行号 
 	oss << StrFormat("%s [%s] %s:%d ", GetTimeNow().c_str(), GetLevelName(eLevel).c_str(), sFile, iLine);
-	std::cout << "DBG: get log base info succ" << std::endl;
 	
 	va_list pArgList;
 	va_start(pArgList, sFormat);
 	// 消息内容
 	oss << StrFormat(sFormat, pArgList);
 	va_end(pArgList);
-	std::cout << "DBG: get msg info succ" << std::endl;
 	
 	oss << "\n";
 	const std::string &sTemp = oss.str();
@@ -68,7 +65,6 @@ void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char 
 
 	// 这样才能更新到磁盘上，待会一打开文件就能看到最新结果。
 	m_oOutFileStream.flush();
-	std::cout << "DBG: flush succ." << std::endl;
 
 	if (m_bConsole) {
 		std::cout << sTemp;
