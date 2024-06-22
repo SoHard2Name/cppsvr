@@ -4,6 +4,16 @@
 namespace utility {
 
 
+// TODO: 把这些参数配置化。
+Logger::Logger() : m_sFileName("./logs/cppsvr.log"), m_iMaxSize(256),
+		m_eLevel(Logger::LOG_DEBUG), m_bConsole(true) {
+	OpenFile();
+}
+
+Logger::~Logger() {
+	CloseFile();
+}
+
 std::string Logger::GetLevelName(Logger::Level eLevel) {
 
 #define GET_NAME(LevelName) \
@@ -19,73 +29,68 @@ std::string Logger::GetLevelName(Logger::Level eLevel) {
 	return "UNKNOW";
 }
 
-void Logger::Open(const string &filename) {
-	m_sFileName = filename;
-	m_oOutFileStream.Open(filename.c_str(), std::ios::app); // 追加方式
+void Logger::OpenFile() {
+	m_oOutFileStream.open(m_sFileName.c_str(), std::ios::app); // 追加方式
 	if (m_oOutFileStream.fail()) {
-		throw std::logic_error("open log file failed: " + filename);
+		throw std::logic_error("open log file failed: " + m_sFileName);
 	}
 	m_oOutFileStream.seekp(0, std::ios::end); // 把指针放到文件末尾，虽然上面有说ios::app，但是通常会出错。。
-	m_iLen = (int) m_oOutFileStream.tellp();
+	m_iCurrentLen = (int) m_oOutFileStream.tellp();
 }
 
-void Logger::close() {
+void Logger::CloseFile() {
 	m_oOutFileStream.close();
 }
 
-void Logger::log(Logger::Level level, const char *file, int line, const char *format, ...) {
-	if (m_eLevel > level)return; // 等级低于日志等级的消息不做记录
+void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char *sFormat, ...) {
+	std::cout << "DBG: begin Log()" << std::endl;
+	if (m_eLevel > eLevel)return; // 等级低于日志等级的消息不做记录
 	if (m_oOutFileStream.fail()) {
 		throw std::logic_error("open log file failed: " + m_sFileName);
 	}
 	std::ostringstream oss;
-
+	
 	// 时间 [等级] 文件名:行号 
-	oss << StrFormat("%s [%s] %s:%d ", GetTimeNow().c_str(), GetLevelName(level).c_str(), file, line);
-
-	va_list arg_ptr;
-	va_start(arg_ptr, format);
-	// 日志内容
-	oss << StrFormat(format, arg_ptr);
-	va_end(arg_ptr);
-
+	oss << StrFormat("%s [%s] %s:%d ", GetTimeNow().c_str(), GetLevelName(eLevel).c_str(), sFile, iLine);
+	std::cout << "DBG: get log base info succ" << std::endl;
+	
+	va_list pArgList;
+	va_start(pArgList, sFormat);
+	// 消息内容
+	oss << StrFormat(sFormat, pArgList);
+	va_end(pArgList);
+	std::cout << "DBG: get msg info succ" << std::endl;
+	
 	oss << "\n";
-	const string &str = oss.str();
-	m_oOutFileStream << str;
-	m_iLen += str.length();
+	const std::string &sTemp = oss.str();
+	m_oOutFileStream << sTemp;
+	m_iCurrentLen += sTemp.length();
 
-	// 这样才能更新到磁盘上，使我待会一打开文件就能看到最新结果。
+	// 这样才能更新到磁盘上，待会一打开文件就能看到最新结果。
 	m_oOutFileStream.flush();
+	std::cout << "DBG: flush succ." << std::endl;
 
 	if (m_bConsole) {
-		std::cout << str;
+		std::cout << sTemp;
 	}
-	if (m_iMax > 0 && m_iLen >= m_iMax) {
-		rotate();
+	if (m_iMaxSize > 0 && m_iCurrentLen >= m_iMaxSize) {
+		Rotate();
 	}
 }
 
-// TODO: 把这些设置配置化。
-void Logger::set_level(int level) {
-	m_eLevel = level;
-}
-
-void Logger::set_console(bool console) {
-	m_bConsole = console;
-}
-
-void Logger::set_max_size(int bytes) {
-	m_iMax = bytes;
-}
-
-void Logger::rotate() {
-	close();
+void Logger::Rotate() {
+	CloseFile();
 	SleepMs(1000);
-	string filename = m_sFileName + "." + GetTimeNow();
-	if (rename(m_sFileName.c_str(), filename.c_str()) != 0) {
-		throw std::logic_error("rename file error: old is " + m_sFileName + ", new is " + filename);
+	time_t iNow = time(nullptr);
+	struct tm oNow;
+	localtime_r(&iNow, &oNow);
+	char sNow[32] = {};
+	strftime(sNow, sizeof(sNow), ".%Y%m%d_%H-%M-%S", &oNow);
+	std::string sFileName = m_sFileName + sNow;
+	if (rename(m_sFileName.c_str(), sFileName.c_str()) != 0) {
+		throw std::logic_error("rename file error: old is " + m_sFileName + ", new is " + sFileName);
 	}
-	Open(m_sFileName);
+	OpenFile();
 }
 
 }
