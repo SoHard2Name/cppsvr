@@ -3,8 +3,8 @@ project(cppsvr)
 set(CMAKE_CXX_STANDARD 14)
 
 set(HEAD_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-set(LIB_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lib)
-set(EXEC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+set(LIB_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lib_out)
+set(EXEC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin_out)
 
 add_subdirectory(utils)
 add_subdirectory(test)

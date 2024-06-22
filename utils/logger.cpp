@@ -16,7 +16,7 @@ std::string Logger::GetLevelName(Logger::Level eLevel) {
 	GetName(FATAL);
 	
 #undef GetName
-	
+	return "UNKNOW";
 }
 
 void Logger::open(const string &filename) {
