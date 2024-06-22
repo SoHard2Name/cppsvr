@@ -23,4 +23,18 @@ long GetPid() {
 	return syscall(SYS_gettid);
 }
 
+void SleepMs(uint32_t milliseconds) {
+	usleep(milliseconds * 1000);
+}
+
+std::string GetTimeNow() {
+	time_t iNow = time(nullptr);
+	struct tm time_info = {};
+	localtime_r(&iNow, &time_info);
+	char timestamp[32] = {};
+	// 中间不弄空格，适用场景更多，比如文件名。
+	strftime(timestamp, sizeof(timestamp), "%Y-%m-%d_%H-%M-%S", &time_info);
+	return std::string(timestamp);
+}
+
 }

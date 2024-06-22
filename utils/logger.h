@@ -42,7 +42,7 @@ public:
 		LOG_FATAL,
 	};
 	static std::string GetLevelName(Level eLevel);
-	void open(const string &filename);
+	void Open(const string &filename);
 	void close();
 	void log(Level level, const char *file, int line, const char *format, ...); // file、line 分别为记录处所在的文件和行号
 	void set_level(int level);
@@ -50,17 +50,16 @@ public:
 	void set_console(bool console);
 
 private:
-	void rotate(); // 滚动，当文件大小超过 m_max 时备份并清空当前文件再继续记录
+	void rotate(); // 滚动，当文件大小超过 m_iMax 时备份并清空当前文件再继续记录
 	void sleep(int milliseconds);
-	void localtime(struct tm *time_info, const time_t *ticks); // 把时间戳转为可视化的时间存入time_info
 
 private:
-	string m_filename;
-	std::ofstream m_ofs;
-	int m_max = 0; // 一个文件的最大长度，以字节为单位（超过这个长度则会备份然后清空再继续记录后续的）  如果为0则表示不滚动
-	int m_len = 0; // 当前文件长度
-	int m_level = LOG_DEBUG; // 日志等级，低于这个等级的日志不记录。
-	bool m_console = true; // 是否在控制台调试
+	string m_sFileName;
+	std::ofstream m_oOutFileStream;
+	int m_iMax = 0; // 一个文件的最大长度，以字节为单位（超过这个长度则会备份然后清空再继续记录后续的）  如果为0则表示不滚动
+	int m_iLen = 0; // 当前文件长度
+	int m_eLevel = LOG_DEBUG; // 日志等级，低于这个等级的日志不记录。
+	bool m_bConsole = true; // 是否在控制台调试
 };
 
 }
