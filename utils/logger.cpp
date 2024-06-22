@@ -76,7 +76,7 @@ void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char 
 
 void Logger::Rotate() {
 	CloseFile();
-	SleepMs(1000);
+	SleepMs(100);
 	time_t iNow = time(nullptr);
 	struct tm oNow;
 	localtime_r(&iNow, &oNow);
