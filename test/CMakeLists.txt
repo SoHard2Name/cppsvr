@@ -11,4 +11,5 @@ add_executable(testlogger testlogger.cpp)
 add_executable(testyaml1 testyaml1.cpp)
 add_executable(testyaml2 testyaml2.cpp)
 add_executable(testthread testthread.cpp)
+add_executable(testmutex testmutex.cpp)
 

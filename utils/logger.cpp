@@ -48,7 +48,7 @@ std::string Logger::GetLevelName(Logger::Level eLevel) {
 }
 
 Logger::Level Logger::GetLevel(std::string sLevel) {
-#define GET_LEVEL(LevelName) return Logger::LOG_##LevelName
+#define GET_LEVEL(LevelName) if(sLevel == #LevelName) return Logger::LOG_##LevelName
 	
 	GET_LEVEL(DEBUG);
 	GET_LEVEL(INFO);

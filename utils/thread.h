@@ -15,7 +15,7 @@ public:
 	Thread(std::function<void()> funCallBack, const std::string &sName = "UNKNOW");
 	~Thread();
 
-	pid_t GetId() const { return m_id; }
+	pid_t GetId() const { return m_iId; }
 	const std::string &GetName() const { return m_sName; }
 	void Join();
 
@@ -31,8 +31,8 @@ private:
 	static void *Run(void *arg);
 
 private:
-	pid_t m_id = -1;
-	pthread_t m_thread = 0;
+	pid_t m_iId = -1;
+	pthread_t m_tThread = 0; // 这个没办法，这样命名好理解一点。
 	std::function<void()> m_funCallBack;
 	std::string m_sName;
 	// 用于保证线程拿到回调函数之后这个 Thread 对象才被销毁

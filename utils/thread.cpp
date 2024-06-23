@@ -15,7 +15,7 @@ Thread::Thread(std::function<void()> funCallBack, const std::string &sName/* = "
 	if (sName.empty()) {
 		m_sName = "UNKNOW";
 	}
-	int iRet = pthread_create(&m_thread, nullptr, &Thread::Run, this);
+	int iRet = pthread_create(&m_tThread, nullptr, &Thread::Run, this);
 	if (iRet) {
 		ERROR("pthread_create failed. ret %d, name %s", iRet, sName.c_str());
 		throw std::logic_error("pthread_create error");
@@ -28,8 +28,8 @@ Thread::Thread(std::function<void()> funCallBack, const std::string &sName/* = "
 // 此操作将会把 Thread 销毁，而 pthread_detach 之后的线程会继续执行到结束。
 // 也因此要拿信号量控制到至少创建的线程已经拿到回调函数了才到这里。
 Thread::~Thread() {
-	if (m_thread) {
-		pthread_detach(m_thread);
+	if (m_tThread) {
+		pthread_detach(m_tThread);
 	}
 	t_pThread = nullptr;
 	INFO("thread %s be destroyed.", m_sName.c_str());
@@ -47,13 +47,13 @@ const std::string &Thread::GetThreadName() {
 
 // 连接线程，用于阻塞
 void Thread::Join() {
-	if (m_thread) {
-		int iRet = pthread_join(m_thread, nullptr);
+	if (m_tThread) {
+		int iRet = pthread_join(m_tThread, nullptr);
 		if (iRet) {
 			ERROR("pthread_join failed. ret %d, name %s", iRet, m_sName.c_str());
 			throw std::logic_error("pthread_join error");
 		}
-		m_thread = 0;
+		m_tThread = 0;
 	}
 }
 
@@ -62,7 +62,7 @@ void *Thread::Run(void *arg) {
 	Thread *pThread = (Thread *)arg;
 	t_pThread = pThread;
 	t_sThreadName = pThread->m_sName;
-	pThread->m_id = GetThreadId();
+	pThread->m_iId = GetThreadId();
 
 	// Set thread name visible in the kernel and its interfaces.
 	pthread_setname_np(pthread_self(), pThread->m_sName.substr(0, 15).c_str());

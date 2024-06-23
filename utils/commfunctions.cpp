@@ -1,6 +1,7 @@
 #include "utils/commfunctions.h"
 #include "iostream"
 #include "utils/logger.h"
+#include "sys/time.h"
 
 namespace utility {
 
@@ -52,6 +53,14 @@ std::string Trim(std::string sStr) {
 	}
 	auto iLast = sStr.find_last_not_of(' ');
 	return sStr.substr(iFirst, iLast - iFirst + 1);
+}
+
+// 获取当前时间戳（毫秒级）
+long long GetCurrentTimeMs() {
+	struct timeval oTimeVal;
+	gettimeofday(&oTimeVal, NULL);
+	long long timestamp = oTimeVal.tv_sec * 1000LL + oTimeVal.tv_usec / 1000LL;
+	return timestamp;
 }
 
 }
