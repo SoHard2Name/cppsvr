@@ -1,6 +1,5 @@
 #include "utils/commfunctions.h"
 #include "iostream"
-#include "utils/logger.h"
 
 namespace utility {
 
