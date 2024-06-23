@@ -15,6 +15,7 @@
 namespace utility {
 
 // 因为这些宏是在全局用到的，所以就都要加“utility::”
+// 至于为什么把 logger 放这层里面？因为直接无命名空间容易影响别人的操作
 #define DEBUG(format, ...) \
 		utility::Logger::GetSingleton()->Log(utility::Logger::LOG_DEBUG, __FILE__, __LINE__, format, ##__VA_ARGS__)
 #define INFO(format, ...) \

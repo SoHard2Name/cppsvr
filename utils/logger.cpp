@@ -5,7 +5,7 @@ namespace utility {
 
 
 // TODO: 把这些参数配置化。
-Logger::Logger() : m_sFileName("./logs/cppsvr.log"), m_iMaxSize(256),
+Logger::Logger() : m_sFileName("./logs/cppsvr.log"), m_iMaxSize(8192),
 		m_eLevel(Logger::LOG_DEBUG), m_bConsole(true) {
 	OpenFile();
 }

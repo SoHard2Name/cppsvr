@@ -1,0 +1,8 @@
+name: NJK
+sex: male
+age: 21
+phone:
+  - number: 13352
+    model: 红米
+  - number: 19174
+    model: 荣耀
