@@ -10,3 +10,7 @@ target_link_libraries(testlogger commlib)
 add_executable(testyaml1 testyaml1.cpp)
 find_library(YAMLCPP yaml-cpp)
 target_link_libraries(testyaml1 commlib ${YAMLCPP})
+
+add_executable(testyaml2 testyaml2.cpp)
+target_link_libraries(testyaml2 commlib)
+

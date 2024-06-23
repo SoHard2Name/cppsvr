@@ -5,3 +5,6 @@ include_directories(${HEAD_PATH})
 
 aux_source_directory(./ SRC)
 add_library(commlib ${SRC})
+
+find_library(YAMLCPP yaml-cpp)
+target_link_libraries(commlib ${YAMLCPP})
