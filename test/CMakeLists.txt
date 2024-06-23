@@ -7,6 +7,6 @@ include_directories(${HEAD_PATH})
 add_executable(testlogger testlogger.cpp)
 target_link_libraries(testlogger commlib)
 
-add_executable(testyaml testyaml.cpp)
+add_executable(testyaml1 testyaml1.cpp)
 find_library(YAMLCPP yaml-cpp)
-target_link_libraries(testyaml commlib ${YAMLCPP})
+target_link_libraries(testyaml1 commlib ${YAMLCPP})

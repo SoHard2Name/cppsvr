@@ -1,9 +1,4 @@
-#include "string"
-#include "memory"
-#include "cstdarg"
-#include "unistd.h"
-#include "sys/syscall.h"
-#include "iostream"
+#include "utils/commfunctions.h"
 
 namespace utility {
 
