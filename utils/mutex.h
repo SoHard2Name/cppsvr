@@ -9,11 +9,28 @@ namespace utility {
 // 信号量
 class Semaphore {
 public:
-	Semaphore(uint32_t iCount = 0);
-	~Semaphore();
 
-	void Wait();
-	void Notify();
+	Semaphore(uint32_t iCount/* = 0*/) {
+		if (sem_init(&m_semaphore, 0, iCount)) { // 0 表示不与其他进程共享
+			throw std::logic_error("sem_init error");
+		}
+	}
+
+	~Semaphore() {
+		sem_destroy(&m_semaphore);
+	}
+
+	void Wait() {
+		if (sem_wait(&m_semaphore)) {
+			throw std::logic_error("sem_wait error");
+		}
+	}
+
+	void Notify() {
+		if (sem_post(&m_semaphore)) {
+			throw std::logic_error("sem_post error");
+		}
+	}
 
 private:
 	Semaphore(const Semaphore &) = delete;
