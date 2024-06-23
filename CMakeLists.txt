@@ -7,3 +7,5 @@ set(EXEC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 add_subdirectory(utils)
 add_subdirectory(test)
+
+find_library(YAMLCPP yaml-cpp)
