@@ -4,13 +4,15 @@
 #include "stdexcept"
 #include "string"
 #include "fstream"
-#include "utils/singleton.h"
 #include "sstream"
 #include "ctime"
 #include "cstdarg"
 #include "cassert"
-
 #include <unistd.h>
+
+#include "utils/singleton.h"
+#include "utils/config.h"
+
 
 namespace utility {
 
@@ -29,16 +31,32 @@ namespace utility {
 
 class Logger { // 实现为单例模式
 	SINGLETON(Logger);
-
+	
 public:
 	enum Level {
-		LOG_DEBUG = 0,
+		LOG_UNKNOW = 0,
+		LOG_DEBUG,
 		LOG_INFO,
 		LOG_WARN,
 		LOG_ERROR,
 		LOG_FATAL,
 	};
+	
+	class LoggerConfig : public ConfigBase {
+	public:
+		LoggerConfig(std::string sFileName);
+		~LoggerConfig() override {}
+
+	// 既然明显不会出问题，就直接弄成 public 的了。
+	public:
+		std::string m_sFileName; // 日志输出的位置
+		int m_iMaxSize; // 一个文件的最大长度，以字节为单位（超过这个长度则会备份然后清空再继续记录后续的）  如果为0则表示不滚动
+		Logger::Level m_eLevel; // 日志等级，低于这个等级的日志不记录。
+		bool m_bConsole; // 是否在控制台调试
+	};
+
 	static std::string GetLevelName(Level eLevel);
+	static Level GetLevel(std::string sLevel);
 	void Log(Level eLevel, const char *sFile, int iLine, const char *sFormat, ...); // file、line 分别为记录处所在的文件和行号
 
 private:
@@ -47,12 +65,14 @@ private:
 	void Rotate(); // 滚动，当文件大小超过 m_iMaxSize 时备份并清空当前文件再继续记录
 
 private:
+	LoggerConfig m_oLoggerConfig;
 	std::string m_sFileName;
 	std::ofstream m_oOutFileStream;
 	int m_iMaxSize = 0; // 一个文件的最大长度，以字节为单位（超过这个长度则会备份然后清空再继续记录后续的）  如果为0则表示不滚动
 	int m_iCurrentLen = 0; // 当前文件长度
-	int m_eLevel = LOG_DEBUG; // 日志等级，低于这个等级的日志不记录。
+	Level m_eLevel = LOG_DEBUG; // 日志等级，低于这个等级的日志不记录。
 	bool m_bConsole = true; // 是否在控制台调试
 };
+
 
 }

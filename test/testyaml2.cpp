@@ -64,9 +64,13 @@ int main() {
 }
 /*
 老铁没毛病
-2024-06-23 00:21:42 [INFO] /home/abcpony/QQMail/cppsvr/test/testyaml2.cpp:54 name: NJK
-2024-06-23 00:21:42 [INFO] /home/abcpony/QQMail/cppsvr/test/testyaml2.cpp:55 sex: male
-2024-06-23 00:21:42 [INFO] /home/abcpony/QQMail/cppsvr/test/testyaml2.cpp:56 age: 21
-2024-06-23 00:21:42 [INFO] /home/abcpony/QQMail/cppsvr/test/testyaml2.cpp:60 phone 0: number 13352, model 红米
-2024-06-23 00:21:42 [INFO] /home/abcpony/QQMail/cppsvr/test/testyaml2.cpp:60 phone 1: number 19174, model 荣耀
+控制台：
+MSG: get logger conf succ. file name ./logs/cppsvr.log, max size 8192, console 0, level DEBUG
+日志文件：
+2024-06-23 03:10:22 [INFO] /home/abcpony/QQMail/cppsvr/utils/config.cpp:12 load file succ. file name ./test/test.yaml
+2024-06-23 03:10:22 [INFO] /home/abcpony/QQMail/cppsvr/test/testyaml2.cpp:54 name: NJK
+2024-06-23 03:10:22 [INFO] /home/abcpony/QQMail/cppsvr/test/testyaml2.cpp:55 sex: male
+2024-06-23 03:10:22 [INFO] /home/abcpony/QQMail/cppsvr/test/testyaml2.cpp:56 age: 21
+2024-06-23 03:10:22 [INFO] /home/abcpony/QQMail/cppsvr/test/testyaml2.cpp:60 phone 0: number 13352, model 红米
+2024-06-23 03:10:22 [INFO] /home/abcpony/QQMail/cppsvr/test/testyaml2.cpp:60 phone 1: number 19174, model 荣耀
 */

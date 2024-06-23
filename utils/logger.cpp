@@ -3,10 +3,26 @@
 
 namespace utility {
 
+// 这个在创建、读配置的时候是不能输出日志的！！
+Logger::LoggerConfig::LoggerConfig(std::string sFileName) : ConfigBase(sFileName, false) {
+	GetNodeValue(m_oRootNode["FileName"], "", m_sFileName);
+	GetNodeValue(m_oRootNode["MaxSize"], 0u, m_iMaxSize);
+	GetNodeValue(m_oRootNode["Console"], true, m_bConsole);
+	std::string sLevel;
+	GetNodeValue(m_oRootNode["Level"], "", sLevel);
+	m_eLevel = Logger::GetLevel(sLevel);
+	std::cout << StrFormat("MSG: get logger conf succ. file name %s, max size %u, "
+						   "console %d, level %s", m_sFileName.c_str(), m_iMaxSize,
+							m_bConsole, GetLevelName(m_eLevel).c_str()) << std::endl;
+}
 
-// TODO: 把这些参数配置化。
-Logger::Logger() : m_sFileName("./logs/cppsvr.log"), m_iMaxSize(8192),
-		m_eLevel(Logger::LOG_DEBUG), m_bConsole(true) {
+Logger::Logger() : m_oLoggerConfig("./conf/loggerconfig.yaml") {
+	// 获取配置信息
+	m_sFileName = m_oLoggerConfig.m_sFileName;
+	m_iMaxSize = m_oLoggerConfig.m_iMaxSize;
+	m_eLevel = m_oLoggerConfig.m_eLevel;
+	m_bConsole = m_oLoggerConfig.m_bConsole;
+	
 	OpenFile();
 }
 
@@ -26,7 +42,24 @@ std::string Logger::GetLevelName(Logger::Level eLevel) {
 	GET_NAME(FATAL);
 	
 #undef GET_NAME
+	std::cout << StrFormat("%s:%d ERR: unknow level value %d", 
+		__FILE__, __LINE__, eLevel) << std::endl;
 	return "UNKNOW";
+}
+
+Logger::Level Logger::GetLevel(std::string sLevel) {
+#define GET_LEVEL(LevelName) return Logger::LOG_##LevelName
+	
+	GET_LEVEL(DEBUG);
+	GET_LEVEL(INFO);
+	GET_LEVEL(WARN);
+	GET_LEVEL(ERROR);
+	GET_LEVEL(FATAL);	
+
+#undef GET_LEVEL
+	std::cout << StrFormat("%s:%d ERR: unknow level name %s", 
+		__FILE__, __LINE__, sLevel.c_str()) << std::endl;
+	return Logger::LOG_UNKNOW;
 }
 
 void Logger::OpenFile() {

@@ -1,16 +1,13 @@
 #include "utils/commfunctions.h"
+#include "iostream"
+#include "utils/logger.h"
 
 namespace utility {
 
 std::string StrFormat(const char *format, ...) {
 	va_list args; // 可变参数列表的指针
 	va_start(args, format); // 让 arg_ptr 指向 format 后面的第一个参数
-	int iSize = vsnprintf(nullptr, 0, format, args);
-	std::string sResult(iSize, '\0');
-	va_start(args, format);
-	vsnprintf(&sResult[0], iSize + 1, format, args);
-	va_end(args); // 用完可变参数列表指针要记得调用这个东西
-	return sResult;
+	return StrFormat(format, args);
 }
 
 // 传 va_list 的要让它走下面这套逻辑；否则走上面的逻辑是被解释成传的那个
@@ -20,6 +17,10 @@ std::string StrFormat(const char *format, va_list args) {
 	va_list args_copy;
 	va_copy(args_copy, args);
 	int iSize = vsnprintf(nullptr, 0, format, args_copy);
+	// 通常不会遇到这种情况，而是有问题直接就 core 掉了。
+	// 如果遇到段错误的时候就 gdb 看看是不是在这里面，是
+	// 的话就是用了比如 ("%s", 1) 导致的。
+	if (iSize <= 0) return "";
 	std::string sResult(iSize, '\0');
 	va_copy(args_copy, args);
 	vsnprintf(&sResult[0], iSize + 1, format, args_copy);

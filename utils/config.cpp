@@ -1,27 +1,49 @@
 #include "utils/config.h"
 #include "utils/logger.h"
+#include "commfunctions.h"
 
 namespace utility {
 
-ConfigBase::ConfigBase(std::string sFileName) : m_sFileName(sFileName) {
+ConfigBase::ConfigBase(std::string sFileName, bool bCanLog/* = true*/)
+	 : m_sYamlFileName(sFileName), m_bCanLog(bCanLog) {
 	try {
-		m_oRootNode = YAML::LoadFile(m_sFileName);
-		INFO("load file succ. file name %s", m_sFileName.c_str());
+		m_oRootNode = YAML::LoadFile(m_sYamlFileName);
+		if (m_bCanLog) {
+			INFO("load file succ. file name %s", m_sYamlFileName.c_str());
+		}
 	} catch (const YAML::Exception &err) {
-		ERROR("load file failed. file name %s. errmsg %s", m_sFileName.c_str(), err.what());
+		if (m_bCanLog) {
+			ERROR("load file failed. file name %s. errmsg %s", m_sYamlFileName.c_str(), err.what());
+		}
 		exit(0);
 	}
 }
 
-std::string ConfigBase::GetFileName() {
-	return m_sFileName;
+std::string ConfigBase::GetYamlFileName() {
+	return m_sYamlFileName;
+}
+
+void ConfigBase::GetNodeValue(const YAML::Node &oNode, bool bDefaultValue, bool &bVariable) {
+	
+	try {
+		bVariable = oNode.as<bool>();
+	} catch (const YAML::Exception& err) {
+		if (m_bCanLog) {
+			ERROR("convert type to bool err. errmsg %s", err.what());
+		} else {
+			std::cout << StrFormat("convert type to bool err. errmsg %s", err.what()) << std::endl;
+		}
+		bVariable = bDefaultValue;
+	}
 }
 
 void ConfigBase::GetNodeValue(const YAML::Node &oNode, int iDefaultValue, int &iVariable){
 	try {
 		iVariable = oNode.as<int>();
 	} catch (const YAML::Exception& err) {
-		ERROR("convert type to int err. errmsg %s", err.what());
+		if (m_bCanLog) {
+			ERROR("convert type to int err. errmsg %s", err.what());
+		}
 		iVariable = iDefaultValue;
 	}
 }
@@ -30,7 +52,9 @@ void ConfigBase::GetNodeValue(const YAML::Node &oNode, uint32_t iDefaultValue, u
 	try {
 		iVariable = oNode.as<uint32_t>();
 	} catch (const YAML::Exception& err) {
-		ERROR("convert type to uint32 err. errmsg %s", err.what());
+		if (m_bCanLog) {
+			ERROR("convert type to uint32 err. errmsg %s", err.what());
+		}
 		iVariable = iDefaultValue;
 	}
 }
@@ -39,7 +63,9 @@ void ConfigBase::GetNodeValue(const YAML::Node &oNode, std::string sDefaultValue
 	try {
 		sVariable = oNode.as<std::string>();
 	} catch (const YAML::Exception& err) {
-		ERROR("convert type to string err. errmsg %s", err.what());
+		if (m_bCanLog) {
+			ERROR("convert type to string err. errmsg %s", err.what());
+		}
 		sVariable = sDefaultValue;
 	}
 }
