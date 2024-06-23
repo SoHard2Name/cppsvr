@@ -20,7 +20,6 @@ protected:
 	void GetNodeValue(const YAML::Node &oNode, std::string sDefaultValue, std::string &sVariable);
 
 protected: 
-	bool m_bCanLog;
 	std::string m_sYamlFileName;
 	YAML::Node m_oRootNode;
 };
