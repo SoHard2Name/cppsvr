@@ -28,7 +28,7 @@ std::string StrFormat(const char *format, va_list args) {
 	return sResult;
 }
 
-long GetPid() {
+pid_t GetThreadId() {
 	return syscall(SYS_gettid);
 }
 

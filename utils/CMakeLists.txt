@@ -15,5 +15,6 @@ aux_source_directory(./ SRC)
 add_library(commlib SHARED ${SRC})
 
 find_library(YAMLCPP yaml-cpp)
-target_link_libraries(commlib ${YAMLCPP})
+find_library(PTHREAD pthread)
+target_link_libraries(commlib ${YAMLCPP} ${PTHREAD})
 

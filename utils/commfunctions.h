@@ -13,7 +13,7 @@ std::string StrFormat(const char *format, ...)__attribute__((format (printf, 1, 
 
 std::string StrFormat(const char *format, va_list args);
 
-long GetPid();
+pid_t GetThreadId();
 
 void SleepMs(uint32_t milliseconds);
 
