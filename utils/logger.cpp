@@ -76,12 +76,14 @@ void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char 
 
 void Logger::Rotate() {
 	CloseFile();
-	SleepMs(100);
+	// 不停 1s 有可能两次封装的文件同名了。只要到时候
+	// 把 max size 设置合理就行，不会很影响效率。
+	SleepMs(1000);
 	time_t iNow = time(nullptr);
 	struct tm oNow;
 	localtime_r(&iNow, &oNow);
 	char sNow[32] = {};
-	strftime(sNow, sizeof(sNow), ".%Y%m%d_%H-%M-%S", &oNow);
+	strftime(sNow, sizeof(sNow), ".%Y%m%d-%H%M%S", &oNow);
 	std::string sFileName = m_sFileName + sNow;
 	if (rename(m_sFileName.c_str(), sFileName.c_str()) != 0) {
 		throw std::logic_error("rename file error: old is " + m_sFileName + ", new is " + sFileName);
