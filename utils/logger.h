@@ -9,6 +9,7 @@
 #include "cstdarg"
 #include "cassert"
 #include <unistd.h>
+#include "cstdio"
 
 #include "utils/singleton.h"
 #include "utils/config.h"
@@ -57,7 +58,10 @@ public:
 
 	static std::string GetLevelName(Level eLevel);
 	static Level GetLevel(std::string sLevel);
-	void Log(Level eLevel, const char *sFile, int iLine, const char *sFormat, ...); // file、line 分别为记录处所在的文件和行号
+	
+	
+	void Log(Level eLevel, const char *sFile, int iLine, const char *sFormat, ...)
+		__attribute__((format(printf, 5, 6))); // file、line 分别为记录处所在的文件和行号
 
 private:
 	void OpenFile();

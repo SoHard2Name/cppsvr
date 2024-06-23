@@ -8,7 +8,8 @@
 
 namespace utility {
 
-std::string StrFormat(const char *format, ...);
+
+std::string StrFormat(const char *format, ...)__attribute__ ((format (printf, 1, 2)));
 
 std::string StrFormat(const char *format, va_list args);
 
