@@ -1,5 +1,6 @@
 #include "utils/commfunctions.h"
 #include "iostream"
+#include "utils/logger.h"
 
 namespace utility {
 
@@ -16,9 +17,10 @@ std::string StrFormat(const char *format, va_list args) {
 	va_list args_copy;
 	va_copy(args_copy, args);
 	int iSize = vsnprintf(nullptr, 0, format, args_copy);
-	if (iSize <= 0) return "";  // 通常不会遇到这种情况，而是有问题直接就 core 掉了。
-								// 如果遇到段错误的时候就 gdb 看看是不是在这里面，是
-								// 的话就是用了比如 ("%s", 1) 导致的。
+	if (iSize <= 0) {
+		ERROR("StrFormat failed."); // 除非这个错是初始化日志引起的，则这句无意义。
+		return "";
+	}
 	std::string sResult(iSize, '\0');
 	va_copy(args_copy, args);
 	vsnprintf(&sResult[0], iSize + 1, format, args_copy);
