@@ -10,7 +10,7 @@ namespace utility {
 class Semaphore {
 public:
 
-	Semaphore(uint32_t iCount/* = 0*/) {
+	Semaphore(uint32_t iCount = 0) {
 		if (sem_init(&m_semaphore, 0, iCount)) { // 0 表示不与其他进程共享
 			throw std::logic_error("sem_init error");
 		}
