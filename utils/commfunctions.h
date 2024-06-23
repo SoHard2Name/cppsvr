@@ -18,4 +18,7 @@ void SleepMs(uint32_t milliseconds);
 
 std::string GetTimeNow();
 
+// 去除前后空格
+std::string Trim(std::string sStr);
+
 }

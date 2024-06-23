@@ -49,4 +49,13 @@ std::string GetTimeNow() {
 	return std::string(timestamp);
 }
 
+std::string Trim(std::string sStr) {
+	auto iFirst = sStr.find_first_not_of(' ');
+	if (iFirst == std::string::npos) {
+		return "";
+	}
+	auto iLast = sStr.find_last_not_of(' ');
+	return sStr.substr(iFirst, iLast - iFirst + 1);
+}
+
 }
