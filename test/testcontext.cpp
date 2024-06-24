@@ -28,7 +28,7 @@ void MySwapCtx(ucontext_t &oCtxA, ucontext_t &oCtxB) {
 }
 
 int main() {
-	getcontext(&oCtxA);
+	getcontext(&oCtxA); // 这句是要求必须有的，否则遇到 set 或者 swap 会直接 core。
 	oCtxA.uc_link = &oCtxB;
 	oCtxA.uc_stack.ss_sp = malloc(8192);
 	oCtxA.uc_stack.ss_size = 8192;
