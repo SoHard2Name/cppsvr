@@ -5,6 +5,7 @@
 
 namespace utility {
 
+// 封装成这种样子，后面随时想新增一个别的配置类都是可以复用的。
 class ConfigBase {
 public:
 	// 还在读 logger config 的时候肯定不能输出日志。不然就 core dump 了。

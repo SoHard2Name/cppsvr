@@ -12,7 +12,7 @@
 #include "cstdio"
 
 #include "utils/singleton.h"
-#include "utils/config.h"
+#include "utils/configbase.h"
 
 
 namespace utility {
