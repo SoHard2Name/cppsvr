@@ -6,7 +6,7 @@
 #include "unistd.h"
 #include "sys/syscall.h"
 
-namespace utility {
+namespace cppsvr {
 
 
 std::string StrFormat(const char *format, ...)__attribute__((format (printf, 1, 2)));

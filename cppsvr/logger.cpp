@@ -1,27 +1,19 @@
-#include "utils/logger.h"
-#include "utils/commfunctions.h"
+#include "cppsvr/logger.h"
+#include "cppsvr/commfunctions.h"
+#include "cppsvr/cppsvrconfig.h"
+#include "cppsvr/thread.h"
 
-namespace utility {
+namespace cppsvr {
 
-// 这个在创建、读配置的时候是不能输出日志的！！
-Logger::LoggerConfig::LoggerConfig(std::string sFileName) : ConfigBase(sFileName, false) {
-	GetNodeValue(m_oRootNode["FileName"], "", m_sFileName);
-	GetNodeValue(m_oRootNode["MaxSize"], 0u, m_iMaxSize);
-	GetNodeValue(m_oRootNode["Console"], true, m_bConsole);
-	std::string sLevel;
-	GetNodeValue(m_oRootNode["Level"], "", sLevel);
-	m_eLevel = Logger::GetLevel(sLevel);
-	std::cout << StrFormat("MSG: get logger conf succ. file name %s, max size %u, "
-						   "console %d, level %s", m_sFileName.c_str(), m_iMaxSize,
-							m_bConsole, GetLevelName(m_eLevel).c_str()) << std::endl;
-}
 
-Logger::Logger() : m_oLoggerConfig("./conf/loggerconfig.yaml") {
+Logger::Logger() {
 	// 获取配置信息
-	m_sFileName = m_oLoggerConfig.m_sFileName;
-	m_iMaxSize = m_oLoggerConfig.m_iMaxSize;
-	m_eLevel = m_oLoggerConfig.m_eLevel;
-	m_bConsole = m_oLoggerConfig.m_bConsole;
+	const auto &oConfig = *CppSvrConfig::GetSingleton();
+	m_sFileName = oConfig.GetLogFileName();
+	m_iMaxSize = oConfig.GetLogMaxSize();
+	m_eLevel = oConfig.GetLogLevelValue();
+	m_sLevel = oConfig.GetLogLevelName();
+	m_bConsole = oConfig.GetLogConsole();
 	
 	OpenFile();
 }
@@ -47,7 +39,7 @@ std::string Logger::GetLevelName(Logger::Level eLevel) {
 	return "UNKNOW";
 }
 
-Logger::Level Logger::GetLevel(std::string sLevel) {
+Logger::Level Logger::GetLevelValue(std::string sLevel) {
 #define GET_LEVEL(LevelName) if(sLevel == #LevelName) return Logger::LOG_##LevelName
 	
 	GET_LEVEL(DEBUG);
@@ -82,8 +74,9 @@ void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char 
 	}
 	std::ostringstream oss;
 	
-	// 时间 [等级] 文件名:行号 
-	oss << StrFormat("%s [%s] %s:%d ", GetTimeNow().c_str(), GetLevelName(eLevel).c_str(), sFile, iLine);
+	// 时间 (线程id,自定义线程名) [等级] 文件名:行号 
+	oss << StrFormat("%s (%d,%s) [%s] %s:%d ", GetTimeNow().c_str(), GetThreadId(),
+				Thread::GetThreadName().c_str(), GetLevelName(eLevel).c_str(), sFile, iLine);
 	
 	va_list pArgList;
 	va_start(pArgList, sFormat);

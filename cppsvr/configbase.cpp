@@ -1,8 +1,8 @@
-#include "utils/configbase.h"
-#include "utils/logger.h"
-#include "commfunctions.h"
+#include "cppsvr/configbase.h"
+#include "cppsvr/logger.h"
+#include "cppsvr/commfunctions.h"
 
-namespace utility {
+namespace cppsvr {
 
 ConfigBase::ConfigBase(std::string sFileName, bool bCanLog/* = true*/)
 	 : m_sYamlFileName(sFileName) {

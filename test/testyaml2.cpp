@@ -1,4 +1,4 @@
-#include "utils/utility.h"
+#include "cppsvr/cppsvr.h"
 #include <iostream>
 #include <vector>
 #include <yaml-cpp/yaml.h>
@@ -11,7 +11,7 @@ public:
 	std::string m_sModel;
 };
 
-class TestConfig : utility::ConfigBase {
+class TestConfig : cppsvr::ConfigBase {
 public:
 	static TestConfig* GetSingleton(std::string sFileName) {
 		static TestConfig oTestConfig(sFileName);
@@ -30,7 +30,7 @@ public:
 		return m_vecPhones;
 	}
 private:
-	TestConfig(std::string sFileName) : utility::ConfigBase(sFileName) { // 东西放这里才线程安全
+	TestConfig(std::string sFileName) : cppsvr::ConfigBase(sFileName) { // 东西放这里才线程安全
 		GetNodeValue(m_oRootNode["name"], "NJK", m_sName);
 		GetNodeValue(m_oRootNode["sex"], "male", m_sSex);
 		GetNodeValue(m_oRootNode["age"], 0u, m_iAge);
@@ -67,10 +67,10 @@ int main() {
 控制台：
 MSG: get logger conf succ. file name ./logs/cppsvr.log, max size 8192, console 0, level DEBUG
 日志文件：
-2024-06-23 03:10:22 [INFO] /home/abcpony/QQMail/cppsvr/utils/config.cpp:12 load file succ. file name ./test/test.yaml
-2024-06-23 03:10:22 [INFO] /home/abcpony/QQMail/cppsvr/test/testyaml2.cpp:54 name: NJK
-2024-06-23 03:10:22 [INFO] /home/abcpony/QQMail/cppsvr/test/testyaml2.cpp:55 sex: male
-2024-06-23 03:10:22 [INFO] /home/abcpony/QQMail/cppsvr/test/testyaml2.cpp:56 age: 21
-2024-06-23 03:10:22 [INFO] /home/abcpony/QQMail/cppsvr/test/testyaml2.cpp:60 phone 0: number 13352, model 红米
-2024-06-23 03:10:22 [INFO] /home/abcpony/QQMail/cppsvr/test/testyaml2.cpp:60 phone 1: number 19174, model 荣耀
+2024-06-23 03:10:22 [INFO] XXX/cppsvr/cppsvr/config.cpp:12 load file succ. file name ./test/test.yaml
+2024-06-23 03:10:22 [INFO] XXX/cppsvr/test/testyaml2.cpp:54 name: NJK
+2024-06-23 03:10:22 [INFO] XXX/cppsvr/test/testyaml2.cpp:55 sex: male
+2024-06-23 03:10:22 [INFO] XXX/cppsvr/test/testyaml2.cpp:56 age: 21
+2024-06-23 03:10:22 [INFO] XXX/cppsvr/test/testyaml2.cpp:60 phone 0: number 13352, model 红米
+2024-06-23 03:10:22 [INFO] XXX/cppsvr/test/testyaml2.cpp:60 phone 1: number 19174, model 荣耀
 */

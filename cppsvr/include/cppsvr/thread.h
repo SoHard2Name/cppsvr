@@ -4,9 +4,9 @@
 #include "functional"
 #include "pthread.h"
 #include "iostream"
-#include "utils/mutex.h"
+#include "mutex.h"
 
-namespace utility {
+namespace cppsvr {
 
 // Thread 对象属于创建者线程的，里面维护了一些被创建线程的信息
 class Thread {
@@ -22,6 +22,7 @@ public:
 	// 获取 Thread 对象的指针
 	static Thread *GetThis();
 	static const std::string &GetThreadName();
+	static void SetThreadName(std::string sThreadName);
 
 private:
 	Thread(const Thread &) = delete;

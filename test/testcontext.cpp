@@ -1,6 +1,6 @@
 #include "ucontext.h"
 #include "memory"
-#include "utils/utility.h"
+#include "cppsvr/cppsvr.h"
 
 ucontext_t oCtxA, oCtxB;
 
@@ -29,7 +29,7 @@ void MySwapCtx(ucontext_t &oCtxA, ucontext_t &oCtxB) {
 
 int main() {
 	getcontext(&oCtxA); // 这句是要求必须有的，否则遇到 set 或者 swap 会直接 core。
-	oCtxA.uc_link = &oCtxB;
+	// oCtxA.uc_link = &oCtxB; // 这个是设置 ctx a 执行完以后如果 ctx b 不为空就继续执行 ctx b。最下面有例子。
 	oCtxA.uc_stack.ss_sp = malloc(8192);
 	oCtxA.uc_stack.ss_size = 8192;
 	makecontext(&oCtxA, FuncA, 0);
@@ -42,3 +42,35 @@ int main() {
 	
 	return 0;
 }
+
+
+/*
+
+#include "iostream"
+#include "ucontext.h"
+
+ucontext_t oCtxA, oCtxB;
+
+void FuncA() {
+	std::cout << "func a" << std::endl;
+}
+
+int main() {
+	getcontext(&oCtxA); // 这句是要求必须有的，否则遇到 set 或者 swap 会直接 core。
+	oCtxA.uc_link = &oCtxB;
+	oCtxA.uc_stack.ss_sp = malloc(8192);
+	oCtxA.uc_stack.ss_size = 8192;
+	makecontext(&oCtxA, FuncA, 0);
+	
+	swapcontext(&oCtxB, &oCtxA);
+	
+	std::cout << "succ" << std::endl;
+	
+	return 0;
+}
+
+最终输出是
+func a
+succ
+
+*/

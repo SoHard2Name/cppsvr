@@ -1,4 +1,4 @@
-logger:
+Logger:
   # 日志输出位置
   FileName: ./logs/cppsvr.log
   # 一个日志文件最多的字节数
@@ -8,6 +8,7 @@ logger:
   # 是否在控制台展示
   Console: true
 
-fiber:
-  
+Fiber:
+  # 默认的协程栈大小 2 KB
+  StackSize: 2097152
 

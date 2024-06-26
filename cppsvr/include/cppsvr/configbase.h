@@ -3,7 +3,7 @@
 #include "string"
 #include "yaml-cpp/yaml.h"
 
-namespace utility {
+namespace cppsvr {
 
 // 封装成这种样子，后面随时想新增一个别的配置类都是可以复用的。
 class ConfigBase {

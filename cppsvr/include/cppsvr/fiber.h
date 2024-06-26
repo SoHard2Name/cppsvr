@@ -5,14 +5,14 @@
 #include <memory>
 #include <ucontext.h>
 
-namespace utility {
+namespace cppsvr {
 
 // enable_shared_from_this 主要作用就是在类的成员函数内部能方便地
 // 通过 shared_from_this() 获取到本对象的 spt 指针。然后注意创建
 // 对象的时候要使用 spt 创建（如果想要用这个功能）。
 class Fiber : public std::enable_shared_from_this<Fiber> {
 public:
-	std::shared_ptr<Fiber> ptr;
+	typedef std::shared_ptr<Fiber> ptr;
 
 	enum State {
 		INIT,	// 初始状态：协程刚被创建时的状态
@@ -34,13 +34,15 @@ public:
 
 	// 重置协程函数，并重置状态，重置后该内存可以用在新协程的使用上，节约空间。
 	// INIT，TERM
-	void reset(std::function<void()> cb);
+	void Reset(std::function<void()> cb);
 	// 切换到当前协程执行
-	void swapIn();
+	void SwapIn();
 	// 切换到后台执行
-	void swapOut();
+	void SwapOut();
 	// 调用指定协程执行
-	void call();
+	void Call();
+	// 获取协程 id
+	uint64_t GetId() const;
 
 public:
 	// 设置当前协程
@@ -54,21 +56,21 @@ public:
 	// 总协程数
 	static uint64_t TotalFibers();
 
-	static MainFunc();
+	static void MainFunc();
 
 private:
 	// 协程ID
-	uint64_t m_id = 0;
+	uint64_t m_iId = 0;
 	// 协程栈大小
-	uint32_t m_stacksize = 0;
+	uint32_t m_iStackSize = 0;
 	// 协程状态
-	State m_state = INIT;
+	State m_eState = INIT;
 	// 上下文
-	ucontext_t m_ctx;
+	ucontext_t m_oCtx;
 	// 当前栈指针
-	void *m_stack = nullptr;
+	void *m_pStack = nullptr;
 	// 回调函数(协程中运行的方法)
-	std::function<void()> m_cb;
+	std::function<void()> m_funCallBack;
 };
 
 }

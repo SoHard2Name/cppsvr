@@ -1,8 +1,8 @@
-#include "utils/thread.h"
-#include "utils/logger.h"
-#include "commfunctions.h"
+#include "cppsvr/thread.h"
+#include "cppsvr/logger.h"
+#include "cppsvr/commfunctions.h"
 
-namespace utility {
+namespace cppsvr {
 
 // 这个在对应 Thread 对象被销毁后就是空指针
 static thread_local Thread* t_pThread = nullptr;
@@ -43,6 +43,13 @@ Thread *Thread::GetThis() {
 // 获取当前线程名字
 const std::string &Thread::GetThreadName() {
 	return t_sThreadName;
+}
+
+void Thread::SetThreadName(std::string sThreadName) {
+	if (t_pThread) {
+		t_pThread->m_sName = sThreadName;
+	}
+	t_sThreadName = sThreadName;
 }
 
 // 连接线程，用于阻塞
