@@ -49,6 +49,7 @@ Fiber::Fiber() {
 	m_eState = EXEC;
 	SetThis(this);
 
+	// 初始化 context，经过这样设置的后面才能使用。
 	GET_CONTEXT(m_oCtx);
 
 	++s_iFiberCount;
@@ -123,6 +124,7 @@ void Fiber::SwapIn() {
 	assert(m_eState != EXEC);
 	m_eState = EXEC;
 	SWAP_CONTEXT(t_sptThreadMainFiber->m_oCtx, m_oCtx);
+	// 下次再 swapout 的时候就回到这里，也就是主协程里面执行完这个 swapin 函数的下一句。
 }
 
 // 切换到后台执行(一般是由子协程切换到主协程)
