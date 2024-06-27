@@ -37,7 +37,7 @@ public:
 
 private:
 	void ThreadRun() {
-		while (true) {
+		while (true) { // 注意这样设计很不合理！！当任务队列为空的时候就是一直空跑。。
 			std::function<void()> oTask = nullptr;
 			{
 				cppsvr::Mutex::ScopedLock oTaskListLock(m_oTaskListMutex);
