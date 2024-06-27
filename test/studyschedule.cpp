@@ -37,7 +37,8 @@ public:
 
 private:
 	void ThreadRun() {
-		while (true) { // 注意这样设计很不合理！！当任务队列为空的时候就是一直空跑。。
+		while (true) { // 注意可以这样设计，任务为空的时候直接 break 的原因是这
+					   // 里只要开始 run 了就不会有任务加入（特殊情况。）
 			std::function<void()> oTask = nullptr;
 			{
 				cppsvr::Mutex::ScopedLock oTaskListLock(m_oTaskListMutex);
@@ -68,7 +69,7 @@ void TestFunc(std::string sTaskName) {
 	TEMP_ASYN_LOG("MSG: one task start. task name %s", sTaskName.c_str());
 	cppsvr::SleepMs(50);
 	auto iNow = cppsvr::GetCurrentTimeMs();
-	// 用下面这种方法测试，如果线程被调度走了，时间也算在里面了。。所以是错的。
+	// 用下面这种方法测试，线程 sleep 结束后还在排队中的时间也算在里面了。所以是错的。
 	// while (cppsvr::GetCurrentTimeMs() - iNow < iMsCount) {}
 	for (int i = 0; i < 100000000; i++);
 	TEMP_ASYN_LOG("MSG: one task end. task name %s", sTaskName.c_str());
