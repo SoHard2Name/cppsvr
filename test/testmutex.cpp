@@ -31,7 +31,7 @@ void ReadLog(int iLineNum) {
 // 写日志
 void WriteLog(std::string sLog) {
 	cppsvr::RWMutex::ScopedWriteLock oWriteLog(oLogRWMutex);
-	ERROR(sLog.c_str());
+	ERROR("%s", sLog.c_str()); // 以后还是习惯这样用好，毕竟这样就肯定不会警告更不会报错。
 }
 
 int main() {

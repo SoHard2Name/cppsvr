@@ -1,8 +1,8 @@
 Logger:
   # 日志输出位置
   FileName: ./logs/cppsvr.log
-  # 一个日志文件最多的字节数
-  MaxSize: 8192
+  # 一个日志文件最多的字节数（这里设置 4MB）
+  MaxSize: 4194304
   # 日志器输出日志的最低等级
   Level: INFO
   # 是否在控制台展示

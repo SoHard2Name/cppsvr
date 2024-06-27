@@ -46,7 +46,6 @@ public:
 	static std::string GetLevelName(Level eLevel);
 	static Level GetLevelValue(std::string sLevel);
 	
-	
 	void Log(Level eLevel, const char *sFile, int iLine, const char *sFormat, ...)
 		__attribute__((format(printf, 5, 6))); // file、line 分别为记录处所在的文件和行号
 

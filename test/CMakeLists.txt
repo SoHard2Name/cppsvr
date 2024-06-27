@@ -7,6 +7,11 @@ include_directories(${HEAD_PATH})
 # 有了这一行以后下面就不用逐一去 target_link_libraries
 link_libraries(commlib)
 
+add_compile_options(-Werror)
+
+# 专用于写一些小测试，还可能和本项目无关比如做题。
+add_executable(test test.cpp)
+
 add_executable(testlogger testlogger.cpp)
 add_executable(testyaml1 testyaml1.cpp)
 add_executable(testyaml2 testyaml2.cpp)
@@ -14,4 +19,4 @@ add_executable(testthread testthread.cpp)
 add_executable(testmutex testmutex.cpp)
 add_executable(testcontext testcontext.cpp)
 add_executable(testfiber testfiber.cpp)
-
+add_executable(studyschedule studyschedule.cpp)

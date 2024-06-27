@@ -20,9 +20,9 @@ Thread::Thread(std::function<void()> funCallBack, const std::string &sName/* = "
 		ERROR("pthread_create failed. ret %d, name %s", iRet, sName.c_str());
 		throw std::logic_error("pthread_create error");
 	}
-	INFO("thread %s be constructed succ.", m_sName.c_str());
 	// 构造未完成的时候等待...
 	m_oSemaphore.Wait();
+	DEBUG("thread %s be constructed succ.", m_sName.c_str());
 }
 
 // 此操作将会把 Thread 销毁，而 pthread_detach 之后的线程会继续执行到结束。
@@ -32,7 +32,7 @@ Thread::~Thread() {
 		pthread_detach(m_tThread);
 	}
 	t_pThread = nullptr;
-	INFO("thread %s be destroyed.", m_sName.c_str());
+	DEBUG("thread %s be destroyed.", t_sThreadName.c_str());
 }
 
 // 获取当前线程

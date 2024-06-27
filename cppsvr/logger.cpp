@@ -74,9 +74,9 @@ void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char 
 	}
 	std::ostringstream oss;
 	
-	// 时间 (线程id,自定义线程名) [等级] 文件名:行号 
-	oss << StrFormat("%s (%d,%s) [%s] %s:%d ", GetTimeNow().c_str(), GetThreadId(),
-				Thread::GetThreadName().c_str(), GetLevelName(eLevel).c_str(), sFile, iLine);
+	// 时间 毫秒数 (线程id,自定义线程名) [等级] 文件名:行号 
+	oss << StrFormat("%s %d (%d,%s) [%s] %s:%d ", GetTimeNow().c_str(), (int)(GetCurrentTimeMs() % 1000), GetThreadId(),
+					Thread::GetThreadName().c_str(), GetLevelName(eLevel).c_str(), sFile, iLine);
 	
 	va_list pArgList;
 	va_start(pArgList, sFormat);
