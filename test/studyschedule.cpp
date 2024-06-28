@@ -4,12 +4,12 @@
 #include "list"
 
 
-cppsvr::Mutex oLoggerMutex;
+cppsvr::Spinlock oLoggerMutex;
 
 // 这个只是临时用的，因为还是日志器还是同步的嘛。
 #define TEMP_ASYN_LOG(Format, ...)                 \
 	{                                              \
-		cppsvr::Mutex::ScopedLock X(oLoggerMutex); \
+		cppsvr::Spinlock::ScopedLock X(oLoggerMutex); \
 		INFO(Format, ##__VA_ARGS__);               \
 	}
 
