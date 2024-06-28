@@ -98,6 +98,7 @@ void Scheduler::stop() {
 	// 上面那个 return 的特殊情况是不是有点多余？
 	// 这个 idle 方法应该是使线程被阻塞才对而不是死循环，应该搞个睡眠-唤醒机制来调控或者是定时器？
 	// 分 start 和 stop 方法是不是没必要的？直接把 start 弄到构造函数，stop 就是 start
+	// 能否尝试统一都是 use caller 的模式？
 	// 当然现在只是一开始，后面会慢慢改进。
 	if (m_rootFiber && !stopping()) {
 		// 注意这个 m_rootFiber 才是工作的主流程，而不是第一次调用 GetThis 初始化的协程
