@@ -1,7 +1,7 @@
 #include "cppsvr/fiber.h"
 #include "cppsvr/cppsvrconfig.h"
 #include <atomic>
-
+#include "cppsvr/scheduler.h"
 namespace cppsvr {
 
 // 这两个就要搞成宏的，函数的话日志参考价值不大
@@ -22,7 +22,7 @@ static std::atomic<uint64_t> s_iFiberCount{0};
 
 // 线程局部变量（当前协程）
 static thread_local Fiber *t_pCurrentFiber = nullptr;
-// 线程局部变量（**主协程**智能指针）
+// 线程局部变量（**一定是第一次初始化得到的**智能指针）
 static thread_local Fiber::ptr t_sptThreadMainFiber = nullptr;
 
 // 配合配置系统指定协程的 栈大小
@@ -56,8 +56,8 @@ Fiber::Fiber() {
 }
 
 // 创建子协程
-Fiber::Fiber(std::function<void()> funCallBack, size_t iStackSize)
-	: m_iId(++s_iFiberId), m_funCallBack(funCallBack) {
+Fiber::Fiber(std::function<void()> funCallBack, size_t iStackSize/* = 0*/, bool bUseCaller/* = false*/)
+	: m_iId(++s_iFiberId), m_eState(Fiber::INIT), m_funCallBack(funCallBack) {
 	// 统计数加一
 	++s_iFiberCount;
 	// 栈大小，有设置就用设置的，没设置就用配置文件中的
@@ -73,7 +73,11 @@ Fiber::Fiber(std::function<void()> funCallBack, size_t iStackSize)
 	// 指定栈大小
 	m_oCtx.uc_stack.ss_size = m_iStackSize;
 	// 创建上下文
-	makecontext(&m_oCtx, &Fiber::MainFunc, 0);
+	if (bUseCaller) {
+		makecontext(&m_oCtx, &Fiber::CallerMainFunc, 0);
+	} else {
+		makecontext(&m_oCtx, &Fiber::MainFunc, 0);
+	}
 }
 
 Fiber::~Fiber() {
@@ -83,7 +87,7 @@ Fiber::~Fiber() {
 		assert(m_eState == TERM || m_eState == INIT);
 		// 回收栈
 		StackAllocator::Dealloc(m_pStack, m_iStackSize);
-		INFO("one son fiber destruct succ.");
+		DEBUG("one son fiber destruct succ.");
 	} else { // 主协程不会有m_stack
 		assert(!m_funCallBack);
 		assert(m_eState == EXEC);
@@ -91,7 +95,7 @@ Fiber::~Fiber() {
 		if (t_pCurrentFiber == this) {
 			SetThis(nullptr);
 		}
-		INFO("one main fiber destruct succ.");
+		DEBUG("one main fiber destruct succ.");
 	}
 }
 
@@ -111,30 +115,46 @@ void Fiber::Reset(std::function<void()> funCallBack) {
 	m_eState = INIT;
 }
 
+// 一般是从主协程到工作主流程（第一次初始化得到的协程，id 为 0 的）
 void Fiber::Call() {
+	SetThis(this);
 	m_eState = EXEC;
 	INFO("Call one fiber. id %lu", GetId());
 	SWAP_CONTEXT(t_sptThreadMainFiber->m_oCtx, m_oCtx);
 }
 
-// 切换到当前协程执行(一般是由主协程切换到子协程)
+// 一般是从工作主流程回到主协程
+void Fiber::Back() {
+	SetThis(t_sptThreadMainFiber.get());
+	SWAP_CONTEXT(m_oCtx, t_sptThreadMainFiber->m_oCtx);
+}
+
+// 切换到当前协程执行(一般是由工作主要流程(Schedule::Run)切换到子协程)
 void Fiber::SwapIn() {
 	SetThis(this);
 	// 原本不是运行状态，现在给他弄到运行状态
 	assert(m_eState != EXEC);
 	m_eState = EXEC;
-	SWAP_CONTEXT(t_sptThreadMainFiber->m_oCtx, m_oCtx);
-	// 下次再 swapout 的时候就回到这里，也就是主协程里面执行完这个 swapin 函数的下一句。
+	SWAP_CONTEXT(Scheduler::GetMainFiber()->m_oCtx, m_oCtx);
 }
 
-// 切换到后台执行(一般是由子协程切换到主协程)
+// 切换到后台执行(一般是由子协程切换到工作主要流程)
 void Fiber::SwapOut() {
+	DEBUG("fiber will return the cpu to fiber %lu", t_sptThreadMainFiber->m_iId);
 	SetThis(t_sptThreadMainFiber.get());
-	SWAP_CONTEXT(m_oCtx, t_sptThreadMainFiber->m_oCtx);
+	SWAP_CONTEXT(m_oCtx, Scheduler::GetMainFiber()->m_oCtx);
 }
 
 uint64_t Fiber::GetId() const {
 	return m_iId;
+}
+
+Fiber::State Fiber::GetState() const {
+	return m_eState;
+}
+
+void Fiber::SetState(Fiber::State eState) {
+	m_eState = eState;
 }
 
 // 设置当前协程
@@ -187,6 +207,26 @@ void Fiber::MainFunc() {
 	auto raw_ptr = sptCurrentFiber.get();
 	sptCurrentFiber.reset();
 	raw_ptr->SwapOut();
+	// 上面一定会交换走，成功的话一定不会到下面这里。
+	ERROR("fiber should never come here. fiber id %lu", raw_ptr->GetId());
+}
+// 上下两个函数最大的区别就是 swap out 或 back，一个
+// 通常是回到主要工作流程，另一个是直接回到主协程
+void Fiber::CallerMainFunc() {
+	Fiber::ptr sptCurrentFiber = GetThis();
+	assert(sptCurrentFiber);
+	try {
+		sptCurrentFiber->m_funCallBack();
+		sptCurrentFiber->m_funCallBack = nullptr;
+		sptCurrentFiber->m_eState = TERM;
+	} catch (std::exception &ex) {
+		sptCurrentFiber->m_eState = EXCEPT;
+		ERROR("fiber except: %s. id %lu", ex.what(), sptCurrentFiber->GetId());
+	}
+
+	auto raw_ptr = sptCurrentFiber.get();
+	sptCurrentFiber.reset();
+	raw_ptr->Back();
 	// 上面一定会交换走，成功的话一定不会到下面这里。
 	ERROR("fiber should never come here. fiber id %lu", raw_ptr->GetId());
 }

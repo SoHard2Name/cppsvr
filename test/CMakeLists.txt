@@ -19,4 +19,7 @@ add_executable(testthread testthread.cpp)
 add_executable(testmutex testmutex.cpp)
 add_executable(testcontext testcontext.cpp)
 add_executable(testfiber testfiber.cpp)
-add_executable(studyschedule studyschedule.cpp)
+add_executable(testscheduler testscheduler.cpp)
+add_executable(testasynlogger testasynlogger.cpp)
+
+add_executable(studyscheduler studyscheduler.cpp)

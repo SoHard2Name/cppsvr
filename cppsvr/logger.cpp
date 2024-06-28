@@ -2,6 +2,7 @@
 #include "cppsvr/commfunctions.h"
 #include "cppsvr/cppsvrconfig.h"
 #include "cppsvr/thread.h"
+#include "cppsvr/fiber.h"
 
 namespace cppsvr {
 
@@ -74,9 +75,9 @@ void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char 
 	}
 	std::ostringstream oss;
 	
-	// 时间 毫秒数 (线程id,自定义线程名) [等级] 文件名:行号 
-	oss << StrFormat("%s %d (%d,%s) [%s] %s:%d ", GetTimeNow().c_str(), (int)(GetCurrentTimeMs() % 1000), GetThreadId(),
-					Thread::GetThreadName().c_str(), GetLevelName(eLevel).c_str(), sFile, iLine);
+	// 时间 毫秒数 (线程id,自定义线程名; 协程号) [等级] 文件名:行号 
+	oss << StrFormat("%s %d (%d,%s; %lu) [%s] %s:%d ", GetTimeNow().c_str(), (int)(GetCurrentTimeMs() % 1000), GetThreadId(),
+					Thread::GetThreadName().c_str(), Fiber::GetThis()->GetId(), GetLevelName(eLevel).c_str(), sFile, iLine);
 	
 	va_list pArgList;
 	va_start(pArgList, sFormat);
@@ -86,33 +87,37 @@ void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char 
 	
 	oss << "\n";
 	const std::string &sTemp = oss.str();
-	m_oOutFileStream << sTemp;
-	m_iCurrentLen += sTemp.length();
 
-	// 这样才能更新到磁盘上，待会一打开文件就能看到最新结果。
-	m_oOutFileStream.flush();
+	{ // 写进日志文件
+		Mutex::ScopedLock oLogLock(m_oMutex);
+		m_oOutFileStream << sTemp;
+		m_iCurrentLen += sTemp.length();
 
+		// 这样才能更新到磁盘上，待会一打开文件就能看到最新结果。
+		m_oOutFileStream.flush();
+
+		if (m_iMaxSize > 0 && m_iCurrentLen >= m_iMaxSize) {
+			Rotate();
+		}
+	}
+	
 	if (m_bConsole) {
 		std::cout << sTemp;
 	}
-	if (m_iMaxSize > 0 && m_iCurrentLen >= m_iMaxSize) {
-		Rotate();
-	}
 }
 
-void Logger::Rotate() {
+void Logger::Rotate() { // 这个函数外已经有加锁了。
 	CloseFile();
-	// 不停 1s 有可能两次封装的文件同名了。只要到时候
-	// 把 max size 设置合理就行，不会很影响效率。
-	SleepMs(1000);
+	// 不停 1ms 有可能两次封装的文件同名了。但不会很影响效率。
+	SleepMs(1);
 	time_t iNow = time(nullptr);
 	struct tm oNow;
 	localtime_r(&iNow, &oNow);
 	char sNow[32] = {};
-	strftime(sNow, sizeof(sNow), ".%Y%m%d-%H%M%S", &oNow);
-	std::string sFileName = m_sFileName + sNow;
+	strftime(sNow, sizeof(sNow), "%Y%m%d-%H%M%S", &oNow);
+	std::string sFileName = StrFormat("%s.%s_%d", m_sFileName.c_str(), sNow, (int)(GetCurrentTimeMs() % 1000));
 	if (rename(m_sFileName.c_str(), sFileName.c_str()) != 0) {
-		throw std::logic_error("rename file error: old is " + m_sFileName + ", new is " + sFileName);
+		throw std::logic_error(StrFormat("rename file error: old is %s, new is %s", m_sFileName.c_str(), sFileName.c_str()));
 	}
 	OpenFile();
 }

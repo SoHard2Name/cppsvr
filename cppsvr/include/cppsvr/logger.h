@@ -10,7 +10,7 @@
 #include "cassert"
 #include <unistd.h>
 #include "cstdio"
-
+#include "mutex.h"
 #include "singleton.h"
 #include "configbase.h"
 
@@ -62,6 +62,7 @@ private:
 	Level m_eLevel = LOG_DEBUG; // 日志等级，低于这个等级的日志不记录。
 	std::string m_sLevel = "DEBUG"; // 日志等级名称
 	bool m_bConsole = true; // 是否在控制台调试
+	Mutex m_oMutex; // 写锁，目前就是在输出日志那个时候需要锁，其他地方暂不需要。
 };
 
 

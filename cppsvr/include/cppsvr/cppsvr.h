@@ -8,3 +8,5 @@
 #include "thread.h"
 #include "fiber.h"
 #include "cppsvrconfig.h"
+#include "scheduler.h"
+

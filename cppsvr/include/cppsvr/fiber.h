@@ -5,6 +5,8 @@
 #include <memory>
 #include <ucontext.h>
 
+// TODO: 思考如何统一线程第一次调用 GetThis 初始化的协程和后面的工作协程为同一个。
+
 namespace cppsvr {
 
 // enable_shared_from_this 主要作用就是在类的成员函数内部能方便地
@@ -29,24 +31,31 @@ private:
 
 public:
 	// 自定义公共有参构造,提供回调方法和最大方法调用栈信息层数
-	Fiber(std::function<void()> cb, size_t stacksize = 0);
+	// 其中的 bUseCaller 表示使用的是 call/back 而不是 swapin/swapout
+	Fiber(std::function<void()> funCallBack, size_t iStackSize = 0, bool bUseCaller = false);
 	~Fiber();
-
 	// 重置协程函数，并重置状态，重置后该内存可以用在新协程的使用上，节约空间。
 	// INIT，TERM
-	void Reset(std::function<void()> cb);
-	// 切换到当前协程执行
-	void SwapIn();
-	// 切换到后台执行
-	void SwapOut();
-	// 调用指定协程执行
+	void Reset(std::function<void()> funCallBack);
+	// （第一次初始化得到的协程）调用指定协程执行
+	// 开始多协程（第一次初始化的协程并不参与）
 	void Call();
+	// 从当前协程（通常是主要工作流程）切换回第一次初始化得到的协程
+	// 回到单协程
+	void Back();
+	// （从主要工作流程）切换到当前协程执行
+	void SwapIn();
+	// 切换到后台执行（从当前协程切换到主要工作流程）
+	void SwapOut();
 	// 获取协程 id
 	uint64_t GetId() const;
+	// 获取协程状态
+	State GetState() const;
+	void SetState(State eState);
 
 public:
 	// 设置当前协程
-	static void SetThis(Fiber *f);
+	static void SetThis(Fiber *pCurrentFiber);
 	// 返回当前协程
 	static Fiber::ptr GetThis();
 	// 协程切换到后台，并且设置为Ready状态
@@ -57,6 +66,7 @@ public:
 	static uint64_t TotalFibers();
 
 	static void MainFunc();
+	static void CallerMainFunc();
 
 private:
 	// 协程ID

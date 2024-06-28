@@ -3,15 +3,6 @@
 #include "iostream"
 #include "list"
 
-cppsvr::Spinlock oLoggerMutex;
-
-// 这个只是临时用的，因为还是日志器还是同步的嘛。
-#define TEMP_ASYN_LOG(Format, ...)                    \
-	{                                                 \
-		cppsvr::Spinlock::ScopedLock X(oLoggerMutex); \
-		INFO(Format, ##__VA_ARGS__);                  \
-	}
-
 class Scheduler {
 public:
 	Scheduler(uint32_t iThreadNum) : m_iThreadNum(iThreadNum),
@@ -65,14 +56,14 @@ public:
 uint64_t iCounter = 0;
 
 void TestFunc(std::string sTaskName) {
-	TEMP_ASYN_LOG("MSG: one task start. task name %s", sTaskName.c_str());
+	INFO("MSG: one task start. task name %s", sTaskName.c_str());
 	cppsvr::SleepMs(50);
 	auto iNow = cppsvr::GetCurrentTimeMs();
 	// 用下面这种方法测试，线程 sleep 结束后还在排队中的时间也算在里面了。所以是错的。
 	// while (cppsvr::GetCurrentTimeMs() - iNow < iMsCount) {}
 	for (int i = 0; i < 100000000; i++)
 		;
-	TEMP_ASYN_LOG("MSG: one task end. task name %s", sTaskName.c_str());
+	INFO("MSG: one task end. task name %s", sTaskName.c_str());
 }
 
 int main() {
@@ -83,10 +74,10 @@ int main() {
 	for (int i = 0; i < 50; i++) {
 		oScheduler.AddTask(std::bind(TestFunc, cppsvr::StrFormat("Task_%d", i)));
 	}
-	TEMP_ASYN_LOG("run threads begin");
+	INFO("run threads begin");
 	uint64_t iNow = cppsvr::GetCurrentTimeMs();
 	oScheduler.Run();
-	TEMP_ASYN_LOG("run threads end. cost %d ms", (int)(cppsvr::GetCurrentTimeMs() - iNow));
+	INFO("run threads end. cost %d ms", (int)(cppsvr::GetCurrentTimeMs() - iNow));
 
 	return 0;
 }
