@@ -3,20 +3,19 @@
 #include "iostream"
 #include "list"
 
-
 cppsvr::Spinlock oLoggerMutex;
 
 // 这个只是临时用的，因为还是日志器还是同步的嘛。
-#define TEMP_ASYN_LOG(Format, ...)                 \
-	{                                              \
+#define TEMP_ASYN_LOG(Format, ...)                    \
+	{                                                 \
 		cppsvr::Spinlock::ScopedLock X(oLoggerMutex); \
-		INFO(Format, ##__VA_ARGS__);               \
+		INFO(Format, ##__VA_ARGS__);                  \
 	}
 
 class Scheduler {
 public:
-	Scheduler(uint32_t iThreadNum) : m_iThreadNum(iThreadNum), 
-		m_vecThreadPool(iThreadNum) {} // 记得初始化线程池。。
+	Scheduler(uint32_t iThreadNum) : m_iThreadNum(iThreadNum),
+									 m_vecThreadPool(iThreadNum) {} // 记得初始化线程池。。
 
 	// 目前保证的是这个只有单线程的情况下会用，所以暂时不用加锁。
 	void AddTask(std::function<void()> funTask) {
@@ -26,9 +25,9 @@ public:
 	void Run() {
 		for (int i = 0; i < m_iThreadNum; i++) {
 			m_vecThreadPool[i] = std::make_shared<cppsvr::Thread>(
-									// 成员函数要求一定要这样指定，不能漏了类名。
-									std::bind(&Scheduler::ThreadRun, this),
-									cppsvr::StrFormat("Thread_%d", i));
+				// 成员函数要求一定要这样指定，不能漏了类名。
+				std::bind(&Scheduler::ThreadRun, this),
+				cppsvr::StrFormat("Thread_%d", i));
 		}
 		for (int i = 0; i < m_iThreadNum; i++) {
 			m_vecThreadPool[i]->Join();
@@ -71,7 +70,8 @@ void TestFunc(std::string sTaskName) {
 	auto iNow = cppsvr::GetCurrentTimeMs();
 	// 用下面这种方法测试，线程 sleep 结束后还在排队中的时间也算在里面了。所以是错的。
 	// while (cppsvr::GetCurrentTimeMs() - iNow < iMsCount) {}
-	for (int i = 0; i < 100000000; i++);
+	for (int i = 0; i < 100000000; i++)
+		;
 	TEMP_ASYN_LOG("MSG: one task end. task name %s", sTaskName.c_str());
 }
 
@@ -87,6 +87,6 @@ int main() {
 	uint64_t iNow = cppsvr::GetCurrentTimeMs();
 	oScheduler.Run();
 	TEMP_ASYN_LOG("run threads end. cost %d ms", (int)(cppsvr::GetCurrentTimeMs() - iNow));
-	
+
 	return 0;
 }
