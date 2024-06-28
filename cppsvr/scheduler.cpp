@@ -16,7 +16,7 @@ Scheduler::Scheduler(size_t threads/* = 1*/, bool use_caller/* = true*/, const s
 		cppsvr::Fiber::GetThis();
 		--threads;
 
-		assert(GetThis() == nullptr);
+		assert(GetThis() == nullptr); // 本线程已经有人在调度我了，我不能再调度我自己
 		t_scheduler = this;
 
 		m_rootFiber.reset(new Fiber(std::bind(&Scheduler::run, this), 0, true)); // 这个
@@ -60,17 +60,6 @@ void Scheduler::start() {
 		m_threadIds.push_back(m_threads[i]->GetId());
 	}
 	lock.Unlock();
-
-	// 为什么非要搞出一个 m_rootFiber 协程来当主要工作流程？
-	// 其他它本身主流程也是可以通过直接调用 run 来当做工作流程的。
-	// 但是可能考虑到后续如只阻塞这个协程，不会影响到主线程的进行
-	// 而如果直接拿主协程来阻塞，相当于把主线程直接阻塞了，这里先
-	// 这样实现。
-	if (m_rootFiber) {
-		// 注意这个 m_rootFiber 才是工作的主流程，而不是第一次调用 GetThis 初始化的协程
-		m_rootFiber->Call();
-		INFO("main work fiber call end. state %d", m_rootFiber->GetState());
-	}
 }
 
 void Scheduler::stop() {
@@ -86,23 +75,46 @@ void Scheduler::stop() {
 
 	// bool exit_on_this_fiber = false;
 	if (m_rootThread != -1) {
-		assert(GetThis() == this);
+		assert(GetThis() == this); // 是个任务线程，并且这个任务线程的调度器就是它自己
 	} else {
-		assert(GetThis() != this);
+		assert(GetThis() != this); // 不是饿汉调度器，自己不会调度到自己但是并不能直接定为空指针，特殊情况
+								   // 是比如调度器的一个任务里面又创建了一个调度器，那这个线程其实也是被调
+								   // 度的，只不过不是自身。
 	}
 
 	m_stopping = true;
 	for (size_t i = 0; i < m_threadCount; ++i) {
 		tickle();
 	}
-
 	if (m_rootFiber) {
 		tickle();
 	}
-
-	if (stopping()) {
-		return;
+	
+	// 这个参与分担任务的行为我是认可的，因为不然这个线程其实就是在等别人做完而已，自己
+	// 也没什么事情干，这样弄的意义相当于不让它白占内存。
+	// 但是整个流程实现的太屎了，后面再给他封装的合理一些。。。
+	// TODO:
+	// m_autoStop 这个变量就是完全没必要的。
+	// 上面那个 return 的特殊情况是不是有点多余？
+	// 这个 idle 方法应该是使线程被阻塞才对而不是死循环，应该搞个睡眠-唤醒机制来调控或者是定时器？
+	// 分 start 和 stop 方法是不是没必要的？直接把 start 弄到构造函数，stop 就是 start
+	// 当然现在只是一开始，后面会慢慢改进。
+	if (m_rootFiber && !stopping()) {
+		// 注意这个 m_rootFiber 才是工作的主流程，而不是第一次调用 GetThis 初始化的协程
+		m_rootFiber->Call();
+		INFO("main work fiber call end. state %d", m_rootFiber->GetState());
 	}
+	
+	// 等待每个子线程都释放了
+	std::vector<Thread::ptr> thrs;
+    {
+        MutexType::ScopedLock lock(m_mutex);
+        thrs.swap(m_threads);
+    }
+    for(auto& i : thrs) {
+        i->Join();
+    }
+
 
 	// if(exit_on_this_fiber) {
 	// }
@@ -129,6 +141,7 @@ void Scheduler::run() {
 	while (true) {
 		ft.reset();
 		bool tickle_me = false;
+        bool is_active = false;
 		{
 			MutexType::ScopedLock lock(m_mutex);
 			auto it = m_fibers.begin();
@@ -147,6 +160,8 @@ void Scheduler::run() {
 
 				ft = *it;
 				m_fibers.erase(it);
+                ++m_activeThreadCount;
+				is_active = true;
 				break;
 			}
 		}
@@ -157,7 +172,6 @@ void Scheduler::run() {
 
 		// 协程式任务
 		if (ft.fiber && (ft.fiber->GetState() != Fiber::TERM && ft.fiber->GetState() != Fiber::EXCEPT)) {
-			++m_activeThreadCount;
 			ft.fiber->SwapIn();
 			--m_activeThreadCount;
 
@@ -174,7 +188,6 @@ void Scheduler::run() {
 				cb_fiber.reset(new Fiber(ft.cb));
 			}
 			ft.reset();
-			++m_activeThreadCount;
 			cb_fiber->SwapIn();
 			--m_activeThreadCount;
 			if (cb_fiber->GetState() == Fiber::READY) {
@@ -187,6 +200,10 @@ void Scheduler::run() {
 				cb_fiber.reset();
 			}
 		} else { // 无任务
+			if (is_active) {
+				--m_activeThreadCount;
+				continue;
+			}
 			if (idle_fiber->GetState() == Fiber::TERM) {
 				INFO("idle fiber term");
 				break;
@@ -213,6 +230,9 @@ bool Scheduler::stopping() {
 
 void Scheduler::idle() {
 	INFO("idle");
+	while (!stopping()) {
+		Fiber::GetThis()->YieldToHold();
+	}
 }
 
 }
