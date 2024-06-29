@@ -100,7 +100,7 @@ void Scheduler::stop() {
 	// 分 start 和 stop 方法是不是没必要的？直接把 start 弄到构造函数，stop 就是 start
 	// 能否尝试统一都是 use caller 的模式？
 	// 当然现在只是一开始，后面会慢慢改进。
-	if (m_rootFiber && !stopping()) {
+	if (m_rootFiber && !stopping()) { // 还没搞完那我就去帮助，反正到这个时候调度器线程也只是在等结束了，所以不如帮一帮。
 		// 注意这个 m_rootFiber 才是工作的主流程，而不是第一次调用 GetThis 初始化的协程
 		m_rootFiber->Call();
 		INFO("main work fiber call end. state %d", m_rootFiber->GetState());
@@ -108,13 +108,13 @@ void Scheduler::stop() {
 	
 	// 等待每个子线程都释放了
 	std::vector<Thread::ptr> thrs;
-    {
-        MutexType::ScopedLock lock(m_mutex);
-        thrs.swap(m_threads);
-    }
-    for(auto& i : thrs) {
-        i->Join();
-    }
+	{
+		MutexType::ScopedLock lock(m_mutex);
+		thrs.swap(m_threads);
+	}
+	for(auto& i : thrs) {
+		i->Join();
+	}
 
 
 	// if(exit_on_this_fiber) {
