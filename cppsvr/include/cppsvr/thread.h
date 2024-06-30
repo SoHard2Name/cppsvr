@@ -5,11 +5,14 @@
 #include "pthread.h"
 #include "iostream"
 #include "mutex.h"
+#include "noncopyable.h"
 
 namespace cppsvr {
 
 // Thread 对象属于创建者线程的，里面维护了一些被创建线程的信息
 class Thread {
+	NON_COPY_ABLE(Thread);
+	
 public:
 	typedef std::shared_ptr<Thread> ptr;
 	Thread(std::function<void()> funCallBack, const std::string &sName = "UNKNOW");
@@ -25,10 +28,6 @@ public:
 	static void SetThreadName(std::string sThreadName);
 
 private:
-	Thread(const Thread &) = delete;
-	Thread(const Thread &&) = delete;
-	Thread &operator=(const Thread &) = delete;
-
 	static void *Run(void *arg);
 
 private:

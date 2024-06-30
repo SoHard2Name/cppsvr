@@ -221,7 +221,7 @@ void Scheduler::run() {
 }
 
 void Scheduler::tickle() {
-	INFO("tickle");
+	DEBUG("tickle");
 }
 
 bool Scheduler::stopping() {

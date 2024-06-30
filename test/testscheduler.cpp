@@ -5,11 +5,14 @@
 
 void test_fiber() {
 	INFO("test in fiber");
-	sleep(1);
-	static int iCount = 5;
-	if (--iCount) {
-		cppsvr::Scheduler::GetThis()->schedule(&test_fiber);
-	}
+	cppsvr::Fiber::GetThis()->Split(); // sawpout 和 swap in 是不怕同时进行的。
+	// INFO("test in fiber");
+	// sleep(1);
+	// static int iCount = 5;
+	// if (--iCount) {
+	// 	cppsvr::Scheduler::GetThis()->schedule(&test_fiber);
+	// }
+	INFO("arrive here");
 }
 
 int main() {
@@ -53,5 +56,27 @@ int main() {
 2024-06-28 11:02:11 828 (57004,main_0; 0) [INFO] XXX/cppsvr/cppsvr/scheduler.cpp:208 idle fiber term
 2024-06-28 11:02:11 829 (57005,main_1; 0) [INFO] XXX/cppsvr/cppsvr/scheduler.cpp:208 idle fiber term
 2024-06-28 11:02:11 829 (57003,main; 0) [INFO] XXX/cppsvr/test/testscheduler.cpp:23 over
+
+*/
+
+/*
+
+2024-06-30 00:48:34 167 (79747,UNKNOW; 0) [INFO] XXX/cppsvr/test/testscheduler.cpp:33 main
+2024-06-30 00:48:34 167 (79748,main_0; 0) [INFO] XXX/cppsvr/cppsvr/scheduler.cpp:130 run
+2024-06-30 00:48:34 168 (79748,main_0; 2) [INFO] XXX/cppsvr/cppsvr/scheduler.cpp:233 idle
+2024-06-30 00:48:34 172 (79749,main_1; 0) [INFO] XXX/cppsvr/cppsvr/scheduler.cpp:130 run
+2024-06-30 00:48:34 173 (79749,main_1; 3) [INFO] XXX/cppsvr/cppsvr/scheduler.cpp:233 idle
+2024-06-30 00:48:35 168 (79747,main; 0) [INFO] XXX/cppsvr/test/testscheduler.cpp:37 schedule
+2024-06-30 00:48:35 169 (79747,main; 1) [INFO] XXX/cppsvr/cppsvr/fiber.cpp:112 Call one fiber. id 1
+2024-06-30 00:48:35 169 (79748,main_0; 4) [INFO] XXX/cppsvr/test/testscheduler.cpp:12 test in fiber
+2024-06-30 00:48:35 169 (79747,main; 1) [INFO] XXX/cppsvr/cppsvr/scheduler.cpp:130 run
+2024-06-30 00:48:35 169 (79747,main; 5) [INFO] XXX/cppsvr/cppsvr/scheduler.cpp:233 idle
+2024-06-30 00:48:35 185 (79749,main_1; 6) [INFO] XXX/cppsvr/test/testscheduler.cpp:17 come here ... 
+2024-06-30 00:48:35 185 (79749,main_1; 0) [INFO] XXX/cppsvr/cppsvr/scheduler.cpp:209 idle fiber term
+2024-06-30 00:48:35 185 (79747,main; 0) [INFO] XXX/cppsvr/cppsvr/scheduler.cpp:209 idle fiber term
+2024-06-30 00:48:35 185 (79747,main; 0) [INFO] XXX/cppsvr/cppsvr/scheduler.cpp:106 main work fiber call end. state 3
+2024-06-30 00:48:35 186 (79748,main_0; 0) [INFO] XXX/cppsvr/cppsvr/scheduler.cpp:209 idle fiber term
+2024-06-30 00:48:35 186 (79747,main; 0) [INFO] XXX/cppsvr/test/testscheduler.cpp:40 over
+
 
 */

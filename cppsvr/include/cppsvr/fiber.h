@@ -9,6 +9,17 @@
 
 namespace cppsvr {
 
+// 这两个就要搞成宏的，函数的话日志参考价值不大
+#define GET_CONTEXT(CtxName) \
+	if (getcontext(&(CtxName))) { \
+		ERROR("get context failed."); \
+	}
+#define SWAP_CONTEXT(CtxA, CtxB) \
+	if (swapcontext(&(CtxA), &(CtxB))) { \
+		ERROR("swap context failed."); \
+	}
+
+
 // enable_shared_from_this 主要作用就是在类的成员函数内部能方便地
 // 通过 shared_from_this() 获取到本对象的 spt 指针。然后注意创建
 // 对象的时候要使用 spt 创建（如果想要用这个功能）。
@@ -47,6 +58,8 @@ public:
 	void SwapIn();
 	// 切换到后台执行（从当前协程切换到主要工作流程）
 	void SwapOut();
+	// 测试用的，把任务切成两半来执行，接下来可以加上一个事件来触发下一半开始执行。
+	void Split();
 	// 获取协程 id
 	uint64_t GetId() const;
 	// 获取协程状态

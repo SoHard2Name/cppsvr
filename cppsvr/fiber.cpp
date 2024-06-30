@@ -2,17 +2,8 @@
 #include "cppsvr/cppsvrconfig.h"
 #include <atomic>
 #include "cppsvr/scheduler.h"
+#include "cppsvr/fiber.h"
 namespace cppsvr {
-
-// 这两个就要搞成宏的，函数的话日志参考价值不大
-#define GET_CONTEXT(CtxName) \
-	if (getcontext(&(CtxName))) { \
-		ERROR("get context failed."); \
-	}
-#define SWAP_CONTEXT(CtxA, CtxB) \
-	if (swapcontext(&(CtxA), &(CtxB))) { \
-		ERROR("swap context failed."); \
-	}
 
 
 // 当前协程ID
@@ -140,9 +131,29 @@ void Fiber::SwapIn() {
 
 // 切换到后台执行(一般是由子协程切换到工作主要流程)
 void Fiber::SwapOut() {
-	DEBUG("fiber will return the cpu to fiber %lu", t_sptThreadMainFiber->m_iId);
+	// DEBUG("fiber will return the cpu to fiber %lu", t_sptThreadMainFiber->m_iId);
 	SetThis(t_sptThreadMainFiber.get());
 	SWAP_CONTEXT(m_oCtx, Scheduler::GetMainFiber()->m_oCtx);
+}
+
+void Fiber::Split() {
+	DEBUG("split begin");
+	volatile bool flag = true; // 否则如果变量上了寄存器就会被存入 context
+	GET_CONTEXT(m_oCtx);
+	if (flag) {
+		flag = false;
+		Scheduler::GetThis()->schedule([&]() {
+			const auto sptCur = GetThis();
+			// sptCur->YieldToHold(); // 回到主要工作流程
+			DEBUG("begin next half");
+			SWAP_CONTEXT(sptCur->m_oCtx, m_oCtx);
+			DEBUG("next half end");
+			// sptCur->SwapIn(); // 结束这个回调函数对应的整个流程。也可以不用管。
+		});
+		setcontext(&Scheduler::GetMainFiber()->m_oCtx);
+	}
+	INFO("here is the next half ");
+	SWAP_CONTEXT(m_oCtx, GetThis()->m_oCtx);
 }
 
 uint64_t Fiber::GetId() const {
