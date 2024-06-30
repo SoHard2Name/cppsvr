@@ -13,5 +13,6 @@ Coroutine:
   StackSize: 2097152
 
 ThreadPool:
+  # 工作线程数
   ThreadNum: 4
 
