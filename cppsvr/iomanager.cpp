@@ -135,8 +135,8 @@
 //     if(cb) { // 这种情况好理解。
 //         event_ctx.cb.swap(cb);
 //     } else { // 这种可能就是有事唤醒当前协程的意思了。
-//         event_ctx.fiber = Fiber::GetThis();
-//         SYLAR_ASSERT(event_ctx.fiber->getState() == Fiber::EXEC);
+//         event_ctx.fiber = Coroutine::GetThis();
+//         SYLAR_ASSERT(event_ctx.fiber->getState() == Coroutine::EXEC);
 //     }
 //     return 0;
 // }
@@ -335,7 +335,7 @@
 //             }
 //         }
 
-//         Fiber::ptr cur = Fiber::GetThis();
+//         Coroutine::ptr cur = Coroutine::GetThis();
 //         auto raw_ptr = cur.get();
 //         cur.reset();
 

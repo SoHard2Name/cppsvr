@@ -15,6 +15,7 @@ Thread::Thread(std::function<void()> funCallBack, const std::string &sName/* = "
 	if (sName.empty()) {
 		m_sName = "UNKNOW";
 	}
+	t_sThreadName = m_sName;
 	int iRet = pthread_create(&m_tThread, nullptr, &Thread::Run, this);
 	if (iRet) {
 		ERROR("pthread_create failed. ret %d, name %s", iRet, sName.c_str());
@@ -32,7 +33,7 @@ Thread::~Thread() {
 		pthread_detach(m_tThread);
 	}
 	t_pThread = nullptr;
-	DEBUG("thread %s be destroyed.", t_sThreadName.c_str());
+	DEBUG("thread %s be destroyed.", m_sName.c_str());
 }
 
 // 获取当前线程

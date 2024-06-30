@@ -46,7 +46,7 @@
 //             /// 事件执行的调度器
 //             Scheduler* scheduler = nullptr;
 //             /// 事件协程
-//             Fiber::ptr fiber;
+//             Coroutine::ptr fiber;
 //             /// 事件的回调函数
 //             std::function<void()> cb;
 //         };

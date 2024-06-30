@@ -7,6 +7,7 @@ public:                                               \
 		static ClassName oInstance;                   \
 		return &oInstance;                            \
 	}                                                 \
+                                                      \
 private:                                              \
 	ClassName();                                      \
 	ClassName(const ClassName &) = delete;            \

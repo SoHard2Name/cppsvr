@@ -20,7 +20,9 @@ public:
 	bool GetLogConsole() const;
 	const std::string &GetLogLevelName() const;
 	
-	uint32_t GetFiberStackSize() const;
+	uint32_t GetCoroutineStackSize() const;
+
+	uint32_t GetThreadNum() const;
 
 private:
 	CppSvrConfig(std::string sFileName);
@@ -35,8 +37,9 @@ private:
 	Logger::Level m_eLogLevel; // 日志等级，低于这个等级的日志不记录。
 	std::string m_sLogLevel; // 日志等级的名称
 
-	uint32_t m_iFiberStackSize; // 协程栈大小（byte 数）
+	uint32_t m_iCoroutineStackSize; // 协程栈大小（byte 数）
 	
+	uint32_t m_iThreadNum; // 线程池（工作）线程数量。
 };
 
 

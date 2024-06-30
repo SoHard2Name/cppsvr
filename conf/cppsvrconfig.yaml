@@ -8,7 +8,10 @@ Logger:
   # 是否在控制台展示
   Console: true
 
-Fiber:
+Coroutine:
   # 默认的协程栈大小 2 KB
   StackSize: 2097152
+
+ThreadPool:
+  ThreadNum: 4
 

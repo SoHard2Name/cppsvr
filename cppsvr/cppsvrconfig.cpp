@@ -1,5 +1,6 @@
 #include "cppsvr/cppsvrconfig.h"
 #include "cppsvr/logger.h"
+#include "cppsvr/cppsvrconfig.h"
 
 namespace cppsvr {
 
@@ -14,16 +15,20 @@ CppSvrConfig::CppSvrConfig(std::string sFileName) : ConfigBase(sFileName, false)
 	m_eLogLevel = Logger::GetLevelValue(m_sLogLevel);
 	
 	// 协程配置
-	const auto &oFiberNode = m_oRootNode["Fiber"];
-	GetNodeValue(oFiberNode["StackSize"], 2*1024*1024u, m_iFiberStackSize);
+	const auto &oCoroutineNode = m_oRootNode["Coroutine"];
+	GetNodeValue(oCoroutineNode["StackSize"], 1024*1024u, m_iCoroutineStackSize);
+	
+	// 线程池配置
+	const auto &oThreadPoolNode = m_oRootNode["ThreadPool"];
+	GetNodeValue(oThreadPoolNode["ThreadNum"], 1u, m_iThreadNum);
 }
 
 // 虽然这里用到了日志器，但是上面已经创建完配置器，所以日志器能正常获取配置信息。
 void CppSvrConfig::LogConfigInfo() const {
 	INFO("config info: log file name %s, log max size %u, log console %d, "
-		 "log level %s[%d]. fiber stack size %u", m_sLogFileName.c_str(), 
+		 "log level %s[%d]. coroutine stack size %u", m_sLogFileName.c_str(), 
 		 m_iLogMaxSize, m_bLogConsole, m_sLogLevel.c_str(),
-		 m_eLogLevel, m_iFiberStackSize);
+		 m_eLogLevel, m_iCoroutineStackSize);
 }
 
 const std::string &CppSvrConfig::GetLogFileName() const {
@@ -42,12 +47,15 @@ bool CppSvrConfig::GetLogConsole() const{
 	return m_bLogConsole;
 }
 
-uint32_t CppSvrConfig::GetFiberStackSize() const{
-	return m_iFiberStackSize;
+uint32_t CppSvrConfig::GetCoroutineStackSize() const{
+	return m_iCoroutineStackSize;
+}
+
+uint32_t CppSvrConfig::GetThreadNum() const {
+	return m_iThreadNum;
 }
 
 const std::string &CppSvrConfig::GetLogLevelName() const {
 	return m_sLogLevel;
 }
-
 }

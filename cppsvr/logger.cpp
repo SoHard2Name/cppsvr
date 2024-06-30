@@ -2,7 +2,7 @@
 #include "cppsvr/commfunctions.h"
 #include "cppsvr/cppsvrconfig.h"
 #include "cppsvr/thread.h"
-#include "cppsvr/fiber.h"
+#include "cppsvr/coroutine.h"
 
 namespace cppsvr {
 
@@ -77,7 +77,7 @@ void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char 
 	
 	// 时间 毫秒数 (线程id,自定义线程名; 协程号) [等级] 文件名:行号 
 	oss << StrFormat("%s %d (%d,%s; %lu) [%s] %s:%d ", GetTimeNow().c_str(), (int)(GetCurrentTimeMs() % 1000), GetThreadId(),
-					Thread::GetThreadName().c_str(), Fiber::GetThis()->GetId(), GetLevelName(eLevel).c_str(), sFile, iLine);
+					Thread::GetThreadName().c_str(), Coroutine::GetThis()->GetId(), GetLevelName(eLevel).c_str(), sFile, iLine);
 	
 	va_list pArgList;
 	va_start(pArgList, sFormat);
