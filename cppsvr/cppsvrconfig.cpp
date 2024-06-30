@@ -8,7 +8,7 @@ namespace cppsvr {
 CppSvrConfig::CppSvrConfig(std::string sFileName) : ConfigBase(sFileName, false) {
 	// 日志配置
 	const auto &oLoggerNode = m_oRootNode["Logger"];
-	GetNodeValue(oLoggerNode["FileName"], "", m_sLogFileName);
+	GetNodeValue(oLoggerNode["FileName"], "./logs/cppsvr.log", m_sLogFileName);
 	GetNodeValue(oLoggerNode["MaxSize"], 0u, m_iLogMaxSize);
 	GetNodeValue(oLoggerNode["Console"], true, m_bLogConsole);
 	GetNodeValue(oLoggerNode["Level"], "", m_sLogLevel);

@@ -58,7 +58,7 @@ Logger::Level Logger::GetLevelValue(std::string sLevel) {
 void Logger::OpenFile() {
 	m_oOutFileStream.open(m_sFileName.c_str(), std::ios::app); // 追加方式
 	if (m_oOutFileStream.fail()) {
-		throw std::logic_error("open log file failed: " + m_sFileName);
+		throw std::logic_error(StrFormat("open log file failed. file name %s", m_sFileName.c_str()));
 	}
 	m_oOutFileStream.seekp(0, std::ios::end); // 把指针放到文件末尾，虽然上面有说ios::app，但是通常会出错。。
 	m_iCurrentLen = (int) m_oOutFileStream.tellp();
@@ -70,9 +70,7 @@ void Logger::CloseFile() {
 
 void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char *sFormat, ...) {
 	if (m_eLevel > eLevel) return; // 等级低于日志等级的消息不做记录
-	if (m_oOutFileStream.fail()) {
-		throw std::logic_error("open log file failed: " + m_sFileName);
-	}
+	assert(!m_oOutFileStream.fail());
 	std::ostringstream oss;
 	
 	// 时间 毫秒数 (线程id,自定义线程名; 协程号) [等级] 文件名:行号 
