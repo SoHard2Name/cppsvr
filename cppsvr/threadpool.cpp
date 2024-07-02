@@ -4,7 +4,7 @@
 
 namespace cppsvr {
 
-ThreadPool::ThreadPool() : m_bIsStopping(false), m_iThreadNum(CppSvrConfig::GetSingleton()->GetThreadNum()) {
+ThreadPool::ThreadPool() : m_bIsStopping(false), m_iThreadNum(CppSvrConfig::GetSingleton()->GetThreadPoolThreadNum()) {
 	for (int i = 0; i < m_iThreadNum; i++) {
 		m_vecThreads.emplace_back(new Thread(std::bind(&ThreadPool::Run, this), StrFormat("Thread_%d", i)));
 	}
@@ -18,7 +18,7 @@ void ThreadPool::AddTask(std::function<void()> funTask) {
 	AddTask(std::make_shared<Coroutine>(std::move(funTask)));
 }
 
-void ThreadPool::AddTask(cppsvr::Coroutine::ptr pCoroutine) {
+void ThreadPool::AddTask(Coroutine::ptr pCoroutine) {
 	Mutex::ScopedLock oLock(m_oTasksMutex);
 	m_listTasks.push_back(pCoroutine);
 	m_semNotEmpty.Notify();

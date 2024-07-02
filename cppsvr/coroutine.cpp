@@ -66,7 +66,7 @@ Coroutine::Coroutine(std::function<void()> funCallBack, size_t iStackSize/* = 0*
 	m_oCtx.uc_stack.ss_size = m_iStackSize;
 	// 创建上下文
 	makecontext(&m_oCtx, &Coroutine::MainFunc, 0);
-	DEBUG("one son coroutine construct succ");
+	// DEBUG("one son coroutine construct succ");
 }
 
 Coroutine::~Coroutine() {
@@ -94,7 +94,7 @@ void Coroutine::SwapIn() {
 	auto pCurrentCoroutine = GetThis();
 	m_pReturnCoroutine = pCurrentCoroutine;
 	SetThis(this);
-	DEBUG("before main func, use count %ld", GetThis().use_count());
+	// DEBUG("before main func, use count %ld", GetThis().use_count());
 	assert(m_eState != EXEC);
 	m_eState = EXEC;
 	SWAP_CONTEXT(pCurrentCoroutine->m_oCtx, m_oCtx);
@@ -103,7 +103,7 @@ void Coroutine::SwapIn() {
 // 切换到后台
 void Coroutine::SwapOut(State eState/* = HOLD*/) {
 	assert(m_pReturnCoroutine && m_eState == EXEC);
-	DEBUG("cur use count %ld", GetThis().use_count());
+	// DEBUG("cur use count %ld", GetThis().use_count());
 	SetThis(m_pReturnCoroutine.get());
 	m_eState = eState;
 	volatile bool bFlag = true;
@@ -159,7 +159,7 @@ uint64_t Coroutine::TotalCoroutines() {
 void Coroutine::MainFunc() {
 	Coroutine::ptr pCurrentCoroutine = GetThis();
 	assert(pCurrentCoroutine);
-	DEBUG("begin main func, use count %ld", pCurrentCoroutine.use_count());
+	// DEBUG("begin main func, use count %ld", pCurrentCoroutine.use_count());
 	try {
 		pCurrentCoroutine->m_funCallBack();
 	} catch (std::exception &ex) {
@@ -168,11 +168,11 @@ void Coroutine::MainFunc() {
 	}
 	pCurrentCoroutine->m_funCallBack = nullptr;
 	Coroutine* pRow = pCurrentCoroutine.get();
-	DEBUG("here555 use count %ld", pCurrentCoroutine.use_count());
+	// DEBUG("here555 use count %ld", pCurrentCoroutine.use_count());
 	pCurrentCoroutine.reset(); // 否则影响销毁！
 	pRow->SwapOut(TERM);
 	// 上面一定会交换走，成功的话一定不会到下面这里。
-	ERROR("coroutine should never come here. coroutine id %lu", pCurrentCoroutine->GetId());
+	ERROR("coroutine should never come here. coroutine id %lu", pRow->GetId());
 }
 
 }

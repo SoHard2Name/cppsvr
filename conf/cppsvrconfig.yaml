@@ -1,18 +1,22 @@
 Logger:
-  # 日志输出位置
+  # 日志输出位置（默认 ./logs/cppsvr.log）
   FileName: ./logs/cppsvr.log
-  # 一个日志文件最多的字节数（这里设置 4MB）
+  # 一个日志文件最多的字节数（这里设置 4MB，默认 4MB）
   MaxSize: 4194304
-  # 日志器输出日志的最低等级
+  # 日志器输出日志的最低等级（默认 DEBUG）
   Level: DEBUG
-  # 是否在控制台展示
+  # 是否在控制台展示（默认 true）
   Console: true
 
 Coroutine:
-  # 默认的协程栈大小 2 KB
+  # 协程栈大小（这里 2 KB，默认 1 KB）
   StackSize: 2097152
 
+Reactor:
+  # 子响应器的数量（默认 0，也就是单 reactor 模式）
+  SubReactorNum: 2
+
 ThreadPool:
-  # 工作线程数
+  # 工作线程数（默认 1）
   ThreadNum: 4
 

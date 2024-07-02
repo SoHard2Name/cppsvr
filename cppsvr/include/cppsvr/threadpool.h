@@ -15,7 +15,7 @@ class ThreadPool {
 	SINGLETON(ThreadPool);
 public:
 	void AddTask(std::function<void()> funTask);
-	void AddTask(cppsvr::Coroutine::ptr pCoroutine);
+	void AddTask(Coroutine::ptr pCoroutine);
 	void Close();
 	
 private:

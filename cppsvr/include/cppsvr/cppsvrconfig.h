@@ -22,7 +22,9 @@ public:
 	
 	uint32_t GetCoroutineStackSize() const;
 
-	uint32_t GetThreadNum() const;
+	uint32_t GetThreadPoolThreadNum() const;
+	
+	uint32_t GetSubReactorNum() const;
 
 private:
 	CppSvrConfig(std::string sFileName);
@@ -39,7 +41,9 @@ private:
 
 	uint32_t m_iCoroutineStackSize; // 协程栈大小（byte 数）
 	
-	uint32_t m_iThreadNum; // 线程池（工作）线程数量。
+	uint32_t m_iThreadPoolThreadNum; // 线程池（工作）线程数量。
+	
+	uint32_t m_iSubReactorNum; // 子 reactor 数量
 };
 
 
