@@ -21,3 +21,4 @@ add_executable(testsplit testsplit.cpp)
 add_executable(testreactor testreactor.cpp)
 
 add_executable(studyscheduler studyscheduler.cpp)
+add_executable(studyassamblylanguage studyassamblylanguage.cpp)
