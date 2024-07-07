@@ -19,4 +19,6 @@ Reactor:
 ThreadPool:
   # 工作线程数（默认 1）
   ThreadNum: 4
+  # 单个线程的工作协程数（默认 100）
+  CoRoutineNum: 100
 

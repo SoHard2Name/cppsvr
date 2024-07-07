@@ -67,14 +67,14 @@ void Reactor::MainLoop() {
 			auto iTriggeredEvent = oEpollEvent.events;
 			if (pFdCtx) {
 				if (iTriggeredEvent & READ_EVENT) { // 触发读事件
-					pFdCtx->m_pReadHandler->SwapIn();
+					(pFdCtx->m_pReadHandler)();
 				}
 				if (iTriggeredEvent & WRITE_EVENT) { // 触发写事件
-					pFdCtx->m_pWriteHandler->SwapIn();
+					(pFdCtx->m_pWriteHandler)();
 				}
 				if (iTriggeredEvent & ERROR_EVENT) { // 触发错误事件。
 					ERROR("fd %d has error event.", pFdCtx->m_iFd);
-					pFdCtx->m_pErrorHandler->SwapIn();
+					(pFdCtx->m_pErrorHandler)();
 				}
 			} else {
 				ERROR("fd ctx is null.");
@@ -86,27 +86,25 @@ void Reactor::MainLoop() {
 
 void Reactor::RegisterEvent(int iFd, Event eEvent, std::function<void()> funCallBack, bool bRepeated/* = true*/){
 	// 这样就能做到每次调用的时候是一次原本注册的那个回调函数了
-	RegisterEvent(iFd, eEvent, std::make_shared<Coroutine>([=](){ // 这里如果还是用 '&' 就将来要用到的时候一堆变量其实都被清理了。
-		do {
-			funCallBack();
-			Coroutine::GetThis()->SwapOut();
-		} while (bRepeated);
-		// 不用了记得注销，否则会原本协程结束了，但是又给他 swapin 进去，走到不该走的地方。
-		UnregisterEvent(iFd, eEvent);
-	}));
-}
+	// 这里如果还是用 '&' 就将来要用到的时候一堆变量其实都被清理了。
+	auto funRealCallBack = [=](){
+		funCallBack();
+		if (bRepeated == false) {
+			UnregisterEvent(iFd, eEvent);
+		}
+	};
 
-void Reactor::RegisterEvent(int iFd, Event eEvent, Coroutine::ptr pCoroutine){
 	if (m_mapFd2FdContext.count(iFd) == 0) {
 		m_mapFd2FdContext.emplace(iFd, iFd);
 	}
+	// 不能直接 m_mapFd2FdContext[iFd] 因为这种需要无参构造函数。
 	auto &oFdCtx = m_mapFd2FdContext.find(iFd)->second;
 
 #define SET_HANDLER(EventType) \
 		if (oFdCtx.m_p##EventType##Handler != nullptr) { \
 			WARN("fd %d already has " #EventType " handler", iFd); \
 		} \
-		oFdCtx.m_p##EventType##Handler = pCoroutine
+		oFdCtx.m_p##EventType##Handler = funRealCallBack
 
 	if (eEvent == READ_EVENT) {
 		SET_HANDLER(Read);
@@ -143,7 +141,7 @@ void Reactor::UnregisterEvent(int iFd, Event eEvent){
 			WARN(#EventType " hander is null. fd %d, event %d", iFd, eEvent); \
 			return; \
 		} \
-		oFdCtx.m_p##EventType##Handler.reset()
+		oFdCtx.m_p##EventType##Handler = nullptr
 		
 	if (eEvent == READ_EVENT) {
 		REMOVE_HANDLER(Read);

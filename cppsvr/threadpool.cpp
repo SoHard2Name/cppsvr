@@ -15,12 +15,8 @@ ThreadPool::~ThreadPool() {
 }
 
 void ThreadPool::AddTask(std::function<void()> funTask) {
-	AddTask(std::make_shared<Coroutine>(std::move(funTask)));
-}
-
-void ThreadPool::AddTask(Coroutine::ptr pCoroutine) {
 	Mutex::ScopedLock oLock(m_oTasksMutex);
-	m_listTasks.push_back(pCoroutine);
+	m_listTasks.push_back(std::move(funTask));
 	m_semNotEmpty.Notify();
 	DEBUG("add one task succ. its cur use count %ld", m_listTasks.back().use_count());
 }
@@ -44,20 +40,17 @@ void ThreadPool::Run() {
 		if (ShouldStop()) { // 是叫我停下来的。注意在这个步骤之前不能先拿锁。
 			break;
 		}
-		Coroutine::ptr oTask;
-		{
+		std::function<void()> oTask;
+		{ // TODO: 改为无锁队列
 			Mutex::ScopedLock oLock(m_oTasksMutex);
 			if (m_listTasks.size()) {
-				oTask = m_listTasks.front();
+				oTask = std::move(m_listTasks.front());
 				m_listTasks.pop_front();
 			}
 		}
-		DEBUG("task use count before exec: %ld", oTask.use_count());
 		if (oTask) {
-			oTask->SwapIn();
+			oTask();
 		}
-		// 到这里其实也已经除出了那个协程，走到了主要工作协程的地方了。
-		DEBUG("task coroutine use count %ld", oTask.use_count());
 	}
 	ERROR("one thread end Run");
 }

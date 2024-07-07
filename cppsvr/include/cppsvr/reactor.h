@@ -34,12 +34,11 @@ public:
 	void MainLoop();
 	// 注册事件
 	void RegisterEvent(int iFd, Event eEvent, std::function<void()> funCallBack, bool bRepeated = true);
-	void RegisterEvent(int iFd, Event eEvent, Coroutine::ptr pCoroutine);
 	// 注销事件
 	void UnregisterEvent(int iFd, Event eEvent);
 	// 唤醒我
 	void WakeUp();
-	
+
 	// 文件描述符上下文，绑定到 epoll 事件的指针上，用于注册回调函数。
 	// 只有一个 reactor 会去实际操作这个东西，所以没必要锁。
 	struct FdContext {
@@ -47,9 +46,9 @@ public:
 					m_pWriteHandler(nullptr), m_pErrorHandler(nullptr) {}
 		int m_iFd;
 		Event m_eEvent;
-		Coroutine::ptr m_pReadHandler;
-		Coroutine::ptr m_pWriteHandler;
-		Coroutine::ptr m_pErrorHandler;
+		std::function<void()> m_pReadHandler;
+		std::function<void()> m_pWriteHandler;
+		std::function<void()> m_pErrorHandler;
 	};
 	
 private:
