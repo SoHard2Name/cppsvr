@@ -4,7 +4,7 @@
 #include "cppsvr/threadpool.h"
 namespace cppsvr {
 
-// 计算线程 id 
+// 计算线程 id
 static std::atomic<uint64_t> s_iCoroutineId{0};
 // 线程总数（包括那些每个线程的主协程，只算存活）
 static std::atomic<uint64_t> s_iCoroutineCount{0};
@@ -34,7 +34,7 @@ public:
 using StackAllocator = MallocStackAllocator;
 
 // 将当前线程的上下文交由主协程
-Coroutine::Coroutine() : m_pReturnCoroutine(nullptr) {
+Coroutine::Coroutine(int) : m_iId(0), m_funUserFunc(nullptr), m_pReturnCoroutine(nullptr) {
 	m_eState = EXEC;
 	SetThis(this);
 
@@ -48,8 +48,8 @@ Coroutine::Coroutine() : m_pReturnCoroutine(nullptr) {
 }
 
 // 创建子协程
-Coroutine::Coroutine(std::function<void()> funCallBack, size_t iStackSize/* = 0*/)
-	: m_iId(++s_iCoroutineId), m_eState(Coroutine::INIT), m_funCallBack(funCallBack), m_pReturnCoroutine(nullptr) {
+Coroutine::Coroutine(std::function<void()> funUserFunc/* = nullptr*/, size_t iStackSize/* = 0*/)
+	: m_iId(++s_iCoroutineId), m_eState(Coroutine::INIT), m_funUserFunc(funUserFunc), m_pReturnCoroutine(nullptr) {
 	// 统计数加一
 	++s_iCoroutineCount;
 	// 栈大小，有设置就用设置的，没设置就用配置文件中的
@@ -58,6 +58,12 @@ Coroutine::Coroutine(std::function<void()> funCallBack, size_t iStackSize/* = 0*
 	m_pStack = StackAllocator::Alloc(m_iStackSize);
 	// 获取当前上下文
 	GET_CONTEXT(m_oCtx);
+	SetUserFunc(funUserFunc);
+}
+
+void Coroutine::SetUserFunc(std::function<void()> funUserFunc) {
+	assert(m_eState == INIT || m_eState == TERM || m_eState == EXCEPT);
+	m_funUserFunc = funUserFunc;
 	// 没有关联上下文（如果有关联上下文，自身结束时会到关联上下文执行）
 	m_oCtx.uc_link = nullptr;
 	// 指定上下文起始指针
@@ -78,9 +84,8 @@ Coroutine::~Coroutine() {
 		StackAllocator::Dealloc(m_pStack, m_iStackSize);
 		DEBUG("one son coroutine destruct succ.");
 	} else { // 主协程不会有m_stack
-		assert(!m_funCallBack);
+		assert(!m_funUserFunc);
 		assert(m_eState == EXEC);
-
 		if (t_pCurrentCoroutine == this) {
 			SetThis(nullptr);
 		}
@@ -90,7 +95,6 @@ Coroutine::~Coroutine() {
 
 // 切换到当前协程
 void Coroutine::SwapIn() {
-	m_oSpinlock.Lock();
 	auto pCurrentCoroutine = GetThis();
 	m_pReturnCoroutine = pCurrentCoroutine;
 	SetThis(this);
@@ -106,22 +110,7 @@ void Coroutine::SwapOut(State eState/* = HOLD*/) {
 	// DEBUG("cur use count %ld", GetThis().use_count());
 	SetThis(m_pReturnCoroutine.get());
 	m_eState = eState;
-	volatile bool bFlag = true;
-	GET_CONTEXT(m_oCtx);
-	if (bFlag) {
-		bFlag = false;
-		m_oSpinlock.Unlock(); // 解锁之前要设置好 ctx，而要解锁之后才能切走
-		SET_CONTEXT(m_pReturnCoroutine->m_oCtx);
-	}
-}
-
-void Coroutine::Split() {
-	// 由于 SwapOut 的设计，不到下面切出去它是不可能 SwapIn 的，
-	// 并且下次 SwapIn 的时候其实就是到了这个 SwapOut 结束的地方。
-	// 后面如果说一个任务执行一半需要阻塞就是把下面这个东西换成注
-	// 册事件即可。
-	cppsvr::ThreadPool::GetSingleton()->AddTask(GetThis());
-	SwapOut();
+	SWAP_CONTEXT(m_oCtx, m_pReturnCoroutine->m_oCtx);
 }
 
 uint64_t Coroutine::GetId() const {
@@ -146,7 +135,8 @@ Coroutine::ptr Coroutine::GetThis() {
 	if (t_pCurrentCoroutine) {
 		return t_pCurrentCoroutine->shared_from_this();
 	}
-	t_pMainCoroutine.reset(new Coroutine);
+	// 传个 int 占位，表示创建的是主协程
+	t_pMainCoroutine.reset(new Coroutine(114514));
 	t_pCurrentCoroutine = t_pMainCoroutine.get();
 	return t_pCurrentCoroutine->shared_from_this();
 }
@@ -161,12 +151,14 @@ void Coroutine::MainFunc() {
 	assert(pCurrentCoroutine);
 	// DEBUG("begin main func, use count %ld", pCurrentCoroutine.use_count());
 	try {
-		pCurrentCoroutine->m_funCallBack();
+		if (pCurrentCoroutine->m_funUserFunc) { // 比如初始化一个协程池就是没有任务函数的。
+			pCurrentCoroutine->m_funUserFunc();
+		}
 	} catch (std::exception &ex) {
 		pCurrentCoroutine->m_eState = EXCEPT;
 		ERROR("coroutine except: %s. id %lu", ex.what(), pCurrentCoroutine->GetId());
 	}
-	pCurrentCoroutine->m_funCallBack = nullptr;
+	pCurrentCoroutine->m_funUserFunc = nullptr;
 	Coroutine* pRow = pCurrentCoroutine.get();
 	// DEBUG("here555 use count %ld", pCurrentCoroutine.use_count());
 	pCurrentCoroutine.reset(); // 否则影响销毁！

@@ -2,16 +2,19 @@
 
 
 int main() {
-	cppsvr::Thread::SetThreadName("Main");
-	INFO("test begin");
-	cppsvr::ThreadPool::GetSingleton()->AddTask([]() {
-		INFO("before split");
-		DEBUG("before split use count %ld", cppsvr::Coroutine::GetThis().use_count());
-		cppsvr::Coroutine::GetThis()->Split();
-		INFO("after split");
-	});
-	cppsvr::ThreadPool::GetSingleton()->Close();
-	INFO("end test, current coroutine num: %lu", cppsvr::Coroutine::TotalCoroutines());
+	
+	// 这套已经过时了。是自己异想天开的东西。
+
+	// cppsvr::Thread::SetThreadName("Main");
+	// INFO("test begin");
+	// cppsvr::ThreadPool::GetSingleton()->AddTask([]() {
+	// 	INFO("before split");
+	// 	DEBUG("before split use count %ld", cppsvr::Coroutine::GetThis().use_count());
+	// 	cppsvr::Coroutine::GetThis()->Split();
+	// 	INFO("after split");
+	// });
+	// cppsvr::ThreadPool::GetSingleton()->Close();
+	// INFO("end test, current coroutine num: %lu", cppsvr::Coroutine::TotalCoroutines());
 	
 	return 0;
 }

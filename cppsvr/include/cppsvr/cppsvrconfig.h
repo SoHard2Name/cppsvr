@@ -23,8 +23,7 @@ public:
 	uint32_t GetCoroutineStackSize() const;
 
 	uint32_t GetThreadPoolThreadNum() const;
-	
-	uint32_t GetSubReactorNum() const;
+	uint32_t GetCoroutineNum() const;
 
 private:
 	CppSvrConfig(std::string sFileName);
@@ -40,10 +39,9 @@ private:
 	std::string m_sLogLevel; // 日志等级的名称
 
 	uint32_t m_iCoroutineStackSize; // 协程栈大小（byte 数）
-	
+
 	uint32_t m_iThreadPoolThreadNum; // 线程池（工作）线程数量。
-	
-	uint32_t m_iSubReactorNum; // 子 reactor 数量
+	uint32_t m_iCoroutineNum; // 一个工作线程中的协程数量。
 };
 
 

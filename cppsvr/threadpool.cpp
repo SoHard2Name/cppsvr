@@ -18,7 +18,6 @@ void ThreadPool::AddTask(std::function<void()> funTask) {
 	Mutex::ScopedLock oLock(m_oTasksMutex);
 	m_listTasks.push_back(std::move(funTask));
 	m_semNotEmpty.Notify();
-	DEBUG("add one task succ. its cur use count %ld", m_listTasks.back().use_count());
 }
 
 void ThreadPool::Close() {

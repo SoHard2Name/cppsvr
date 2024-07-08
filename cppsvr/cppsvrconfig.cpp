@@ -15,15 +15,13 @@ CppSvrConfig::CppSvrConfig(std::string sFileName) : ConfigBase(sFileName, false)
 	
 	// 协程配置
 	const auto &oCoroutineNode = m_oRootNode["Coroutine"];
-	GetNodeValue(oCoroutineNode["StackSize"], 1024*1024u, m_iCoroutineStackSize);
+	GetNodeValue(oCoroutineNode["StackSize"], 128*1024u, m_iCoroutineStackSize);
 	
 	// 线程池配置
 	const auto &oThreadPoolNode = m_oRootNode["ThreadPool"];
 	GetNodeValue(oThreadPoolNode["ThreadNum"], 1u, m_iThreadPoolThreadNum);
+	GetNodeValue(oThreadPoolNode["CoroutineNum"], 100u, m_iCoroutineNum);
 	
-	// Reactor 配置
-	const auto &oReactorNode = m_oRootNode["Reactor"];
-	GetNodeValue(oReactorNode["SubReactorNum"], 0u, m_iSubReactorNum);
 }
 
 // 虽然这里用到了日志器，但是上面已经创建完配置器，所以日志器能正常获取配置信息。
@@ -58,8 +56,8 @@ uint32_t CppSvrConfig::GetThreadPoolThreadNum() const {
 	return m_iThreadPoolThreadNum;
 }
 
-uint32_t CppSvrConfig::GetSubReactorNum() const {
-	return m_iSubReactorNum;
+uint32_t CppSvrConfig::GetCoroutineNum() const {
+	return m_iCoroutineNum;
 }
 
 const std::string &CppSvrConfig::GetLogLevelName() const {

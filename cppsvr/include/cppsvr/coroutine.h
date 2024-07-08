@@ -8,6 +8,8 @@
 // 但任何时刻只允许一个线程在执行它，所以弄一个自旋锁，当进入协程的时候
 // 锁住，出来的时候解锁。
 
+// TODO：把协程实现为汇编语言那种。
+
 namespace cppsvr {
 
 // 这些就要搞成宏的，函数的话日志参考价值不大
@@ -37,14 +39,14 @@ public:
 	};
 
 private:
-	Coroutine(); // 用于创建主协程。
+	Coroutine(int); // 用于创建主协程。
 	
 public:
-	Coroutine(std::function<void()> funCallBack, size_t iStackSize = 0);
+	Coroutine(std::function<void()> funUserFunc = nullptr, size_t iStackSize = 0);
 	~Coroutine();
+	void SetUserFunc(std::function<void()> funUserFunc);
 	void SwapIn();
 	void SwapOut(State eState = HOLD);
-	void Split();
 	uint64_t GetId() const;
 	State GetState() const;
 	void SetState(State eState);
@@ -68,11 +70,9 @@ private:
 	// 当前栈指针
 	void *m_pStack = nullptr;
 	// 回调函数(协程中运行的方法)
-	std::function<void()> m_funCallBack;
+	std::function<void()> m_funUserFunc;
 	// 应该返回的协程指针（是它来调我的）
 	ptr m_pReturnCoroutine;
-
-	Spinlock m_oSpinlock;
 };
 
 }

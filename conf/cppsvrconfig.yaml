@@ -9,16 +9,12 @@ Logger:
   Console: true
 
 Coroutine:
-  # 协程栈大小（这里 2 KB，默认 1 KB）
-  StackSize: 2097152
-
-Reactor:
-  # 子响应器的数量（默认 0，也就是单 reactor 模式）
-  SubReactorNum: 2
+  # 协程栈大小（这里 64 KB，默认 128 KB）
+  StackSize: 65536
 
 ThreadPool:
   # 工作线程数（默认 1）
   ThreadNum: 4
-  # 单个线程的工作协程数（默认 100）
-  CoRoutineNum: 100
+  # 单个工作线程的协程数（默认 100）
+  CoroutineNum: 100
 
