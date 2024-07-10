@@ -8,13 +8,13 @@
 #include "noncopyable.h"
 #include "coroutine.h"
 #include "vector"
-#include "threadpool.h"
 
 namespace cppsvr {
 
 // Thread 对象属于创建者线程的，里面维护了一些被创建线程的信息
 class Thread {
 	NON_COPY_ABLE(Thread);
+	// 原来声明友元类不需要包含头文件！这样就不会造成相互包含而导致无法编译的情况。
 	friend class ThreadPool;
 public:
 	typedef std::shared_ptr<Thread> ptr;
