@@ -25,7 +25,7 @@ void epoll_wait_thread() {
 		assert(nfds == 1);
 		for (int i = 0; i < nfds; ++i) {
 			if (events[i].data.fd == pipe_fds[0]) {
-				char buf[256];
+				char buf[1];
 				read(pipe_fds[0], buf, sizeof(buf));
 				INFO("thread get wakeup signal. buf content: %s", buf);
 				return;
@@ -53,14 +53,14 @@ int main() {
 	setNonBlocking(pipe_fds[1]);
 
 	struct epoll_event event;
-	event.events = EPOLLIN | EPOLLET;
+	event.events = EPOLLIN;
 	event.data.fd = pipe_fds[0];
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pipe_fds[0], &event) == -1) {
 		ERROR("epoll_ctl pipe_fds[0] err");
 		return 1;
 	}
 
-	const int num_threads = 4;
+	const int num_threads = 50;
 	std::vector<cppsvr::Thread::ptr> threads(num_threads);
 	for (int i = 0; i < num_threads; ++i) {
 		threads[i] = std::make_shared<cppsvr::Thread>(epoll_wait_thread, cppsvr::StrFormat("Thread_%d", i));
