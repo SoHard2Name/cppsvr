@@ -4,7 +4,8 @@
 
 namespace cppsvr {
 
-ThreadPool::ThreadPool() : m_bIsStopping(false), m_iThreadNum(CppSvrConfig::GetSingleton()->GetThreadPoolThreadNum()) {
+ThreadPool::ThreadPool() : m_bIsStopping(false), m_iThreadNum(CppSvrConfig::GetSingleton()->GetThreadPoolThreadNum()),
+						   m_iCoroutineNum(CppSvrConfig::GetSingleton()->GetCoroutineNum()) {
 	for (int i = 0; i < m_iThreadNum; i++) {
 		m_vecThreads.emplace_back(new Thread(std::bind(&ThreadPool::Run, this), StrFormat("Thread_%d", i)));
 	}
@@ -33,6 +34,10 @@ void ThreadPool::Close() {
 
 void ThreadPool::Run() {
 	INFO("one worker thread begin Run");
+	// 创建本线程的协程池
+	for (int i = 0; i < m_iCoroutineNum; i++) {
+		Thread::GetThis()->m_vecIdleCoroutine.emplace_back();
+	}
 	while (true) {
 		// 从队列中取出一个任务。
 		m_semNotEmpty.Wait(); // 首先要有任务

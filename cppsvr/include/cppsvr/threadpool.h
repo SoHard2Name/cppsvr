@@ -36,6 +36,7 @@ private:
 private:
 	bool m_bIsStopping;
 	uint32_t m_iThreadNum;
+	uint32_t m_iCoroutineNum; // 单个线程的协程数量
 	std::vector<Thread::ptr> m_vecThreads;
 	Semaphore m_semNotEmpty;
 	Mutex m_oTasksMutex;

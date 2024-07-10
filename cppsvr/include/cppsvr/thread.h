@@ -6,13 +6,16 @@
 #include "iostream"
 #include "mutex.h"
 #include "noncopyable.h"
+#include "coroutine.h"
+#include "vector"
+#include "threadpool.h"
 
 namespace cppsvr {
 
 // Thread 对象属于创建者线程的，里面维护了一些被创建线程的信息
 class Thread {
 	NON_COPY_ABLE(Thread);
-	
+	friend class ThreadPool;
 public:
 	typedef std::shared_ptr<Thread> ptr;
 	Thread(std::function<void()> funCallBack, const std::string &sName = "UNKNOW");
@@ -35,6 +38,7 @@ private:
 	pthread_t m_tThread = 0; // 这个没办法，这样命名好理解一点。
 	std::function<void()> m_funCallBack;
 	std::string m_sName;
+	std::vector<Coroutine> m_vecIdleCoroutine;
 	// 用于保证线程拿到回调函数之后这个 Thread 对象才被销毁
 	Semaphore m_oSemaphore;
 };
