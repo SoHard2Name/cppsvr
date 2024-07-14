@@ -17,8 +17,11 @@ add_executable(testmutex testmutex.cpp)
 add_executable(testcontext testcontext.cpp)
 add_executable(testasynlogger testasynlogger.cpp)
 add_executable(testpipe testpipe.cpp)
+add_executable(testeventfd testeventfd.cpp)
 add_executable(testsplit testsplit.cpp)
 add_executable(testreactor testreactor.cpp)
 
 add_executable(studyscheduler studyscheduler.cpp)
 add_executable(studyassamblylanguage studyassamblylanguage.cpp)
+add_executable(studyasm studyasm.cpp test3.S)
+
