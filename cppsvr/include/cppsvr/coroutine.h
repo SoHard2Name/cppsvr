@@ -8,6 +8,14 @@ class Coroutine {
 public:
 	Coroutine(std::function<void()> funUserFunc, int iStackSize);
 
+	struct CoroutineContext {
+		CoroutineContext(int iStackSize);
+		~CoroutineContext();
+		void *m_pArgs[8];
+		char *m_pStack;
+		int m_iStackSize;
+	};
+
 	static Coroutine *GetThis();
 	static void SetThis(Coroutine* pCoroutine);
 	
@@ -20,16 +28,7 @@ private:
 
 private:
 	int m_iId;
-
-	struct CoroutineContext {
-		CoroutineContext(int iStackSize);
-		~CoroutineContext();
-		void *m_pArgs[8];
-		char *m_pStack;
-		int m_iStackSize;
-	};
 	CoroutineContext m_oContext;
-
 	Coroutine *m_pFather;
 	std::function<void()> m_funUserFunc;
 };
