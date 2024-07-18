@@ -15,12 +15,9 @@ CppSvrConfig::CppSvrConfig(std::string sFileName) : ConfigBase(sFileName, false)
 	
 	// 协程配置
 	const auto &oCoroutineNode = m_oRootNode["Coroutine"];
+	GetNodeValue(oCoroutineNode["ThreadNum"], 1u, m_iThreadNum);
+	GetNodeValue(oCoroutineNode["CoroutineNum"], 100u, m_iCoroutineNum);
 	GetNodeValue(oCoroutineNode["StackSize"], 128*1024u, m_iCoroutineStackSize);
-	
-	// 线程池配置
-	const auto &oThreadPoolNode = m_oRootNode["ThreadPool"];
-	GetNodeValue(oThreadPoolNode["ThreadNum"], 1u, m_iThreadPoolThreadNum);
-	GetNodeValue(oThreadPoolNode["CoroutineNum"], 100u, m_iCoroutineNum);
 	
 }
 
@@ -52,8 +49,8 @@ uint32_t CppSvrConfig::GetCoroutineStackSize() const{
 	return m_iCoroutineStackSize;
 }
 
-uint32_t CppSvrConfig::GetThreadPoolThreadNum() const {
-	return m_iThreadPoolThreadNum;
+uint32_t CppSvrConfig::GetThreadNum() const {
+	return m_iThreadNum;
 }
 
 uint32_t CppSvrConfig::GetCoroutineNum() const {

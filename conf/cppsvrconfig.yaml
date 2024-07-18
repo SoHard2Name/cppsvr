@@ -9,12 +9,10 @@ Logger:
   Console: true
 
 Coroutine:
-  # 协程栈大小（这里 64 KB，默认 128 KB）
-  StackSize: 65536
-
-ThreadPool:
   # 工作线程数（默认 1）
   ThreadNum: 4
   # 单个工作线程的协程数（默认 100）
   CoroutineNum: 100
+  # 协程栈大小（这里 64 KB，默认 128 KB）
+  StackSize: 65536
 

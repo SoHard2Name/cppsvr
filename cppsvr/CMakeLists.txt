@@ -13,6 +13,9 @@ include_directories(${HEAD_PATH})
 add_compile_options(-Werror)
 
 aux_source_directory(./ SRC)
+file(GLOB ASM_SOURCES "*.S")
+list(APPEND SRC ${ASM_SOURCES})
+
 # 因为一堆的 test 都在用这个库，所以它应该是弄成动态库比较合理
 # 虽说几个小测试也没啥，但也是当做对于构建动态库的理解、实践
 add_library(commlib SHARED ${SRC})

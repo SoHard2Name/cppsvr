@@ -4,7 +4,7 @@
 
 namespace cppsvr {
 
-ThreadPool::ThreadPool() : m_bIsStopping(false), m_iThreadNum(CppSvrConfig::GetSingleton()->GetThreadPoolThreadNum()),
+ThreadPool::ThreadPool() : m_bIsStopping(false), m_iThreadNum(CppSvrConfig::GetSingleton()->GetThreadNum()),
 						   m_iCoroutineNum(CppSvrConfig::GetSingleton()->GetCoroutineNum()) {
 	for (int i = 0; i < m_iThreadNum; i++) {
 		m_vecThreads.emplace_back(new Thread(std::bind(&ThreadPool::Run, this), StrFormat("Thread_%d", i)));
