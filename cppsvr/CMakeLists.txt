@@ -12,6 +12,8 @@ include_directories(${HEAD_PATH})
 
 add_compile_options(-Werror)
 
+enable_language(ASM)
+
 aux_source_directory(./ SRC)
 file(GLOB ASM_SOURCES "*.S")
 list(APPEND SRC ${ASM_SOURCES})

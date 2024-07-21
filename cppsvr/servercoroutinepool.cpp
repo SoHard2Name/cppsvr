@@ -3,10 +3,12 @@
 #include "sys/epoll.h"
 #include "sys/socket.h"
 #include "arpa/inet.h"
-#include "servercoroutinepool.h"
 #include "cstring"
 
 namespace cppsvr {
+
+// 初始化。
+std::unordered_map<uint32_t, std::function<void(const std::string&, std::string&)>> ServerCoroutinePool::g_mapId2Service;
 
 ServerCoroutinePool::ServerCoroutinePool(uint32_t iCoroutineNum/* = 配置数*/) : 
 		CoroutinePool(iCoroutineNum), m_queFd(), m_oCoSemaphore(0) {
@@ -42,6 +44,7 @@ void ServerCoroutinePool::InitCoroutines() {
 	// 剩下的都是 read write 协程，里面也处理业务
 	for (int i = 2; i < m_iCoroutineNum; i++) {
 		m_vecCoroutine[i] = new Coroutine(std::bind(&ServerCoroutinePool::ReadWriteCoroutine, this));
+		m_vecCoroutine[i]->SwapIn();
 	}
 }
 
@@ -61,6 +64,7 @@ void ServerCoroutinePool::AcceptCoroutine() {
 }
 
 void ServerCoroutinePool::ReadWriteCoroutine() {
+	// DEBUG("one ReadWriteCoroutine be init");
 	const int iBufferSize = 1024;
 	char *pBuffer = (char*)malloc(iBufferSize);
 	memset(pBuffer, 0, iBufferSize);
@@ -70,6 +74,7 @@ void ServerCoroutinePool::ReadWriteCoroutine() {
 		m_queFd.pop();
 		// TODO: 改成根据连接超时来弄循环，这样能关闭那些太久没有通信的连接。如果有交流则更新超时时间。
 		while (true) {
+			DEBUG("TEST: one service.");
 			std::string sReq;
 			int iRet = Read(iFd, sReq);
 			if (iRet != 0) {

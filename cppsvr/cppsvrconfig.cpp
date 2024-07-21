@@ -1,6 +1,5 @@
 #include "cppsvr/cppsvrconfig.h"
 #include "cppsvr/logger.h"
-#include "cppsvrconfig.h"
 
 namespace cppsvr {
 

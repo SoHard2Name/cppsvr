@@ -1,5 +1,4 @@
 #include "cppsvr/timer.h"
-#include "timer.h"
 #include "cppsvr/commfunctions.h"
 #include "cppsvr/logger.h"
 #include "algorithm"
@@ -65,8 +64,10 @@ void Timer::GetAllTimeoutEvent(std::list<TimeEvent::ptr> &listResult) {
 	uint64_t iPreTime = m_iCurrentTime;
 	m_iCurrentTime = GetCurrentTimeMs();
 	uint32_t iCount = m_iCurrentTime - iPreTime + 1;
+	uint32_t iPreIndex = m_iCurrentIndex;
+	m_iCurrentIndex = (m_iCurrentIndex + iCount - 1) % m_vecTimeEvent.size();
 	for (int i = 0; i < iCount; i++) {
-		auto &listTimeEvent = m_vecTimeEvent[(m_iCurrentIndex + i) % m_vecTimeEvent.size()];
+		auto &listTimeEvent = m_vecTimeEvent[(iPreIndex + i) % m_vecTimeEvent.size()];
 		for (auto it = listTimeEvent.begin(); it != listTimeEvent.end(); it++) {
 			TimeEvent::ptr pTimeEvent = *it;
 			if (pTimeEvent->m_iExpireTime > m_iCurrentTime) {

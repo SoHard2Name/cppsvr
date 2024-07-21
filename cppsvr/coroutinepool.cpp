@@ -2,7 +2,6 @@
 #include "cppsvr/commfunctions.h"
 #include "atomic"
 #include "cstring"
-#include "coroutinepool.h"
 
 namespace cppsvr {
 
@@ -31,7 +30,7 @@ CoroutinePool::~CoroutinePool() {
 }
 
 void CoroutinePool::Run() {
-	m_pThread = new Thread(std::bind(&ThreadRun, this), cppsvr::StrFormat("CoroutunePool_%u_Thread", m_iId));
+	m_pThread = new Thread(std::bind(&CoroutinePool::ThreadRun, this), cppsvr::StrFormat("CoroutunePool_%u_Thread", m_iId));
 }
 
 void CoroutinePool::AddActive(TimeEvent::ptr pTimeEvent) {
@@ -63,10 +62,19 @@ void CoroutinePool::WaitFdEventWithTimeout(int iFd, int iEpollEvent, uint32_t iR
 						nullptr, std::bind(&DefaultProcess, Coroutine::GetThis()));
 	pTimeEvent->m_funPrepare = std::bind(&DefaultPrepare, pTimeEvent);
 	GetThis()->m_oTimer.AddTimeEvent(pTimeEvent);
+	DEBUG("TEST: pTimeEvent belong list %d", pTimeEvent->m_iBelongList);
 	oEpollEvent.data.ptr = &pTimeEvent;
-	epoll_ctl(GetThis()->m_iEpollFd, EPOLL_CTL_ADD, iFd, &oEpollEvent);
+	int iRet = epoll_ctl(GetThis()->m_iEpollFd, EPOLL_CTL_ADD, iFd, &oEpollEvent);
+	if (iRet) {
+		ERROR("EPOLL_CTL_ADD error. errno %d, errmsg %s", errno, strerror(errno));
+	}
+	DEBUG("TEST: one coroutine will swap out and wait");
 	Coroutine::GetThis()->SwapOut();
-	epoll_ctl(GetThis()->m_iEpollFd, EPOLL_CTL_DEL, iFd, nullptr);
+	DEBUG("TEST: one routine swap in and continue");
+	iRet = epoll_ctl(GetThis()->m_iEpollFd, EPOLL_CTL_DEL, iFd, nullptr);
+	if (iRet) {
+		ERROR("EPOLL_CTL_DEL error. errno %d, errmsg %s", errno, strerror(errno));
+	}
 }
 
 void CoroutinePool::InitCoroutines() {
@@ -85,11 +93,19 @@ void CoroutinePool::ThreadRun() {
 	// 初始化各个协程。
 	InitCoroutines();
 	// 事件循环
-	const int iEventsSize = 1024, iWaitTimeMs = 1; // 毫秒级的定时器
+	DEBUG("TEST: init coroutines end. begin event loop...");
+	const int iEventsSize = 1024, iWaitTimeMs = 1000; // 毫秒级的定时器
 	epoll_event *pEpollEvents = new epoll_event[iEventsSize];
 	memset(pEpollEvents, 0, sizeof(epoll_event) * iEventsSize);
 	while (true) {
+		static int iTestCount = 0;
+		if (iTestCount++ % 1000 == 0) {
+			std::cout << "??? \n";
+		}
 		int iRet = epoll_wait(m_iEpollFd, pEpollEvents, iEventsSize, iWaitTimeMs);
+		if (iRet != 0) {
+			std::cout << "iRet is not zero: " << iRet << std::endl;
+		}
 		if (iRet < 0) {
 			if (errno != EINTR) {
 				ERROR("epoll_wait error. ret %d", iRet);
@@ -110,6 +126,9 @@ void CoroutinePool::ThreadRun() {
 			}
 		}
 		m_oTimer.GetAllTimeoutEvent(m_listActiveEvent);
+		if (m_listActiveEvent.size() > 0) {
+			std::cout << "m_listActiveEvent size > 0 : " << m_listActiveEvent.size() << std::endl;
+		}
 		for (auto it = m_listActiveEvent.begin(); it != m_listActiveEvent.end(); ++it) {
 			auto pTimeEvent = *it;
 			if (pTimeEvent->m_funProcess) {

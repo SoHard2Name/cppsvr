@@ -10,9 +10,9 @@ public:
 	Coroutine(std::function<void()> funUserFunc, uint32_t iStackSize = CppSvrConfig::GetSingleton()->GetCoroutineStackSize());
 
 	struct CoroutineContext {
-		CoroutineContext(uint32_t iStackSize);
+		CoroutineContext(uint32_t iStackSize, Coroutine *pCoroutine);
 		~CoroutineContext();
-		void *m_pArgs[8];
+		void *m_pArgs[14];
 		char *m_pStack;
 		uint32_t m_iStackSize;
 	};

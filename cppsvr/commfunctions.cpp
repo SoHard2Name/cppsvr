@@ -5,7 +5,6 @@
 #include "fcntl.h"
 #include "cassert"
 #include "cstring"
-#include "commfunctions.h"
 
 namespace cppsvr {
 

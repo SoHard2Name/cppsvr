@@ -1,7 +1,7 @@
 #include "cppsvr/coroutine.h"
 #include "atomic"
 #include "cassert"
-#include "coroutine.h"
+#include "cstring"
 
 namespace cppsvr {
 
@@ -13,8 +13,10 @@ static thread_local Coroutine *t_pCurrentCoroutine = nullptr;
 // 线程的主协程
 static thread_local Coroutine *t_pMainCoroutine = nullptr;
 
-Coroutine::CoroutineContext::CoroutineContext(uint32_t iStackSize) :
-		m_pArgs({}), m_pStack(nullptr), m_iStackSize(iStackSize) {
+Coroutine::CoroutineContext::CoroutineContext(uint32_t iStackSize, Coroutine *pCoroutine) :
+		m_pStack(nullptr), m_iStackSize(iStackSize) {
+	// 由于 m_pArgs 是数组，所以就直接 sizeof 它了
+	memset(m_pArgs, 0, sizeof(m_pArgs));
 	if (!iStackSize) {
 		return;
 	}
@@ -27,9 +29,9 @@ Coroutine::CoroutineContext::CoroutineContext(uint32_t iStackSize) :
 	rsp = (char*)((uint64_t)rsp & -16LL);
 	
 	m_pArgs[1] = rsp;
-	*((void**)rsp) = &DoWork;
+	*((void**)rsp) = (void*)&DoWork;
 	
-	m_pArgs[7] = this;
+	m_pArgs[7] = pCoroutine;
 }
 
 Coroutine::CoroutineContext::~CoroutineContext() {
@@ -38,11 +40,11 @@ Coroutine::CoroutineContext::~CoroutineContext() {
 	}
 }
 
-Coroutine::Coroutine(char) : m_iId(0), m_oContext(0), 
+Coroutine::Coroutine(char) : m_iId(0), m_oContext(0, 0), 
 	m_pFather(nullptr), m_funUserFunc(nullptr) {}
 
 Coroutine::Coroutine(std::function<void()> funUserFunc, uint32_t iStackSize/* = 配置的大小*/) 
-	: m_iId(++g_iCoroutineCount), m_oContext(iStackSize), 
+	: m_iId(++g_iCoroutineCount), m_oContext(iStackSize, this), 
 	  m_pFather(nullptr), m_funUserFunc(std::move(funUserFunc)) {}
 
 Coroutine *Coroutine::GetThis() {
@@ -50,7 +52,7 @@ Coroutine *Coroutine::GetThis() {
 		assert(!t_pMainCoroutine);
 		t_pCurrentCoroutine = t_pMainCoroutine = new Coroutine(' ');
 	}
-	return t_pMainCoroutine;
+	return t_pCurrentCoroutine;
 }
 
 void Coroutine::SetThis(Coroutine *pCoroutine) {
