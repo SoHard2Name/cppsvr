@@ -1,33 +1,35 @@
 #pragma once
 #include "memory"
 #include "functional"
+#include "cppsvrconfig.h"
 
 namespace cppsvr {
 
 class Coroutine {
 public:
-	Coroutine(std::function<void()> funUserFunc, int iStackSize);
+	Coroutine(std::function<void()> funUserFunc, uint32_t iStackSize = CppSvrConfig::GetSingleton()->GetCoroutineStackSize());
 
 	struct CoroutineContext {
-		CoroutineContext(int iStackSize);
+		CoroutineContext(uint32_t iStackSize);
 		~CoroutineContext();
 		void *m_pArgs[8];
 		char *m_pStack;
-		int m_iStackSize;
+		uint32_t m_iStackSize;
 	};
 
 	static Coroutine *GetThis();
 	static void SetThis(Coroutine* pCoroutine);
 	
+	uint64_t GetId();
 	void SwapIn();
 	void SwapOut();
 	
 private:
-	Coroutine();
+	Coroutine(char);
 	static void DoWork(Coroutine *pCoroutine);
 
 private:
-	int m_iId;
+	uint64_t m_iId;
 	CoroutineContext m_oContext;
 	Coroutine *m_pFather;
 	std::function<void()> m_funUserFunc;

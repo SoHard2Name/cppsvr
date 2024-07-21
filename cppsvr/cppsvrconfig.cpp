@@ -1,5 +1,6 @@
 #include "cppsvr/cppsvrconfig.h"
 #include "cppsvr/logger.h"
+#include "cppsvrconfig.h"
 
 namespace cppsvr {
 
@@ -19,6 +20,11 @@ CppSvrConfig::CppSvrConfig(std::string sFileName) : ConfigBase(sFileName, false)
 	GetNodeValue(oCoroutineNode["CoroutineNum"], 100u, m_iCoroutineNum);
 	GetNodeValue(oCoroutineNode["StackSize"], 128*1024u, m_iCoroutineStackSize);
 	
+	// 服务器配置
+	const auto &oServerNode = m_oRootNode["Server"];
+	GetNodeValue(oServerNode["IP"], "0.0.0.0", m_sIp);
+	GetNodeValue(oServerNode["Port"], 8888u, m_iPort);
+	GetNodeValue(oServerNode["ReuseAddr"], false, m_bReuseAddr);
 }
 
 // 虽然这里用到了日志器，但是上面已经创建完配置器，所以日志器能正常获取配置信息。
@@ -47,6 +53,18 @@ bool CppSvrConfig::GetLogConsole() const{
 
 uint32_t CppSvrConfig::GetCoroutineStackSize() const{
 	return m_iCoroutineStackSize;
+}
+
+const std::string &CppSvrConfig::GetIp() const {
+	return m_sIp;
+}
+
+uint32_t CppSvrConfig::GetPort() const {
+	return m_iPort;
+}
+
+bool CppSvrConfig::GetReuseAddr() const {
+	return m_bReuseAddr;
 }
 
 uint32_t CppSvrConfig::GetThreadNum() const {

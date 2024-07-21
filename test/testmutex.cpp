@@ -39,7 +39,7 @@ int main() {
 	// 记得要把日志等级调到 ERROR，否则有些地方是多线程的，直接就把同步日志搞乱了。
 	
 	ERROR("begin main()"); // 这个只是开始的时候，只有单个线程没事。
-	long long iBegin = cppsvr::GetCurrentTimeMs();
+	auto iBegin = cppsvr::GetCurrentTimeMs();
 	cppsvr::Thread oThread1(std::bind(WriteLog, "这样就实现多种格式的形参列表"), "thread1");
 	cppsvr::Thread oThread2(std::bind(ReadLog, 2), "thread2");
 	cppsvr::Thread oThread3(std::bind(WriteLog, "emm"), "thread3"); // 这个排前面也没用，饥饿。

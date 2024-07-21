@@ -1,6 +1,7 @@
 #include "cppsvr/coroutine.h"
 #include "atomic"
 #include "cassert"
+#include "coroutine.h"
 
 namespace cppsvr {
 
@@ -12,7 +13,7 @@ static thread_local Coroutine *t_pCurrentCoroutine = nullptr;
 // 线程的主协程
 static thread_local Coroutine *t_pMainCoroutine = nullptr;
 
-Coroutine::CoroutineContext::CoroutineContext(int iStackSize) :
+Coroutine::CoroutineContext::CoroutineContext(uint32_t iStackSize) :
 		m_pArgs({}), m_pStack(nullptr), m_iStackSize(iStackSize) {
 	if (!iStackSize) {
 		return;
@@ -23,7 +24,7 @@ Coroutine::CoroutineContext::CoroutineContext(int iStackSize) :
 	// 留一个指针的位置，写入协程对应的函数地址（即 DoWork）。
 	char *rsp = m_pStack + iStackSize - sizeof(void*);
 	// 保证整除十六字节，这个是操作系统要求的
-	rsp = (char*)((unsigned long long)rsp & -16LL);
+	rsp = (char*)((uint64_t)rsp & -16LL);
 	
 	m_pArgs[1] = rsp;
 	*((void**)rsp) = &DoWork;
@@ -37,17 +38,17 @@ Coroutine::CoroutineContext::~CoroutineContext() {
 	}
 }
 
-Coroutine::Coroutine() : m_iId(0), m_oContext(0), 
+Coroutine::Coroutine(char) : m_iId(0), m_oContext(0), 
 	m_pFather(nullptr), m_funUserFunc(nullptr) {}
 
-Coroutine::Coroutine(std::function<void()> funUserFunc, int iStackSize) 
+Coroutine::Coroutine(std::function<void()> funUserFunc, uint32_t iStackSize/* = 配置的大小*/) 
 	: m_iId(++g_iCoroutineCount), m_oContext(iStackSize), 
 	  m_pFather(nullptr), m_funUserFunc(std::move(funUserFunc)) {}
 
 Coroutine *Coroutine::GetThis() {
 	if (t_pCurrentCoroutine == nullptr) {
 		assert(!t_pMainCoroutine);
-		t_pCurrentCoroutine = t_pMainCoroutine = new Coroutine();
+		t_pCurrentCoroutine = t_pMainCoroutine = new Coroutine(' ');
 	}
 	return t_pMainCoroutine;
 }
@@ -66,6 +67,10 @@ void Coroutine::DoWork(Coroutine *pCoroutine) {
 // 用于切换协程的函数，指定其汇编语言为 asm 符号 CoSwap。
 extern void CoSwap(Coroutine::CoroutineContext* pCurrentCoroutine, 
 	Coroutine::CoroutineContext* pFutureCoroutine) asm("CoSwap");
+
+uint64_t Coroutine::GetId() {
+	return m_iId;
+}
 
 void Coroutine::SwapIn() {
 	m_pFather = GetThis();

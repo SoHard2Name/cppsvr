@@ -2,6 +2,10 @@
 #include "iostream"
 #include "cppsvr/logger.h"
 #include "sys/time.h"
+#include "fcntl.h"
+#include "cassert"
+#include "cstring"
+#include "commfunctions.h"
 
 namespace cppsvr {
 
@@ -55,12 +59,29 @@ std::string Trim(std::string sStr) {
 	return sStr.substr(iFirst, iLast - iFirst + 1);
 }
 
-// 获取当前时间戳（毫秒级）
-long long GetCurrentTimeMs() {
+uint64_t GetCurrentTimeMs() {
 	struct timeval oTimeVal;
 	gettimeofday(&oTimeVal, NULL);
-	long long timestamp = oTimeVal.tv_sec * 1000LL + oTimeVal.tv_usec / 1000LL;
+	uint64_t timestamp = oTimeVal.tv_sec * 1000ull + oTimeVal.tv_usec / 1000;
 	return timestamp;
 }
+
+void SetNonBlock(int iFd) {
+	int iFlag = fcntl(iFd, F_GETFL);
+	assert(!fcntl(iFd, F_SETFL, iFlag | O_NONBLOCK));
+}
+
+uint32_t ByteStr2UInt(const std::string &sStr) {
+	uint32_t iNum = 0;
+	memcpy(&iNum, sStr.c_str(), 4);
+	return 0;
+}
+
+std::string UInt2ByteStr(uint32_t iNum) {
+	char sStr[4];
+	memcpy(sStr, &iNum, 4);
+	return std::string(sStr, 4);
+}
+
 
 }

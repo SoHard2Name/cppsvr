@@ -16,3 +16,11 @@ Coroutine:
   # 协程栈大小（这里 64 KB，默认 128 KB）
   StackSize: 65536
 
+Server:
+  # ip（默认 0.0.0.0）
+  IP: 127.0.0.1
+  # 端口（默认 8888）
+  Port: 1335
+  # 是否复用地址（允许关闭后立即重启服务，即使前面的还在 time_wait 状态。默认为 false）
+  ReuseAddr: true
+

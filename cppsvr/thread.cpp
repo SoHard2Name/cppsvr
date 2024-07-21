@@ -10,8 +10,8 @@ static thread_local Thread* t_pThread = nullptr;
 static thread_local std::string t_sThreadName = "UNKNOW";
 
 // 创建线程，设置回调函数
-Thread::Thread(std::function<void()> funCallBack, const std::string &sName/* = "UNKNOW"*/)
-		: m_funCallBack(funCallBack), m_sName(sName) {
+Thread::Thread(std::function<void()> funUserFunc, const std::string &sName/* = "UNKNOW"*/)
+		: m_funUserFunc(funUserFunc), m_sName(sName) {
 	if (sName.empty()) {
 		m_sName = "UNKNOW";
 	}
@@ -26,7 +26,8 @@ Thread::Thread(std::function<void()> funCallBack, const std::string &sName/* = "
 }
 
 // 此操作将会把 Thread 销毁，而 pthread_detach 之后的线程会继续执行到结束。
-// 也因此要拿信号量控制到至少创建的线程已经拿到回调函数了才到这里。
+// 也因此要拿信号量控制到至少创建的线程已经拿到回调函数了才到这里，不然那个
+// funUserFunc 会被销毁。
 Thread::~Thread() {
 	if (m_tThread) {
 		pthread_detach(m_tThread);
@@ -64,7 +65,7 @@ void Thread::Join() {
 	}
 }
 
-// 执行线程
+// 线程执行函数
 void *Thread::Run(void *arg) {
 	Thread *pThread = (Thread *)arg;
 	t_pThread = pThread;
@@ -74,12 +75,12 @@ void *Thread::Run(void *arg) {
 	// Set thread name visible in the kernel and its interfaces.
 	pthread_setname_np(pthread_self(), pThread->m_sName.substr(0, 15).c_str());
 
-	std::function<void()> funCallBack;
-	funCallBack.swap(pThread->m_funCallBack);
+	std::function<void()> funUserFunc;
+	funUserFunc.swap(pThread->m_funUserFunc);
 	
 	// 拿到回调函数后再通知 Thread 对象可释放
 	pThread->m_oSemaphore.Notify();
-	funCallBack();
+	funUserFunc();
 	return 0;
 }
 

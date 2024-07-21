@@ -23,6 +23,10 @@ public:
 	uint32_t GetThreadNum() const;
 	uint32_t GetCoroutineNum() const;
 	uint32_t GetCoroutineStackSize() const;
+	
+	const std::string &GetIp() const;
+	uint32_t GetPort() const;
+	bool GetReuseAddr() const;
 
 private:
 	CppSvrConfig(std::string sFileName);
@@ -40,6 +44,10 @@ private:
 	uint32_t m_iThreadNum; // （工作）线程数量。
 	uint32_t m_iCoroutineNum; // 一个工作线程中的协程数量。
 	uint32_t m_iCoroutineStackSize; // 协程栈大小（byte 数）
+	
+	std::string m_sIp; // IP 地址
+	uint32_t m_iPort; // 服务端口
+	bool m_bReuseAddr; // 是否复用地址
 };
 
 
