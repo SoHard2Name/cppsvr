@@ -11,3 +11,4 @@ add_compile_options(-Werror)
 
 add_executable(testservercoroutinepool testservercoroutinepool.cpp)
 add_executable(testcoroutine testcoroutine.cpp)
+add_executable(testclient testclient.cpp)

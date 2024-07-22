@@ -1,11 +1,10 @@
 #include "cppsvr/servercoroutinepool.h"
 #include "cppsvr/commfunctions.h"
-#include "sys/epoll.h"
-#include "sys/socket.h"
-#include "arpa/inet.h"
 #include "cstring"
 
 namespace cppsvr {
+
+RUN_FUNC_IMPL(ServerCoroutinePool);
 
 // 初始化。
 std::unordered_map<uint32_t, std::function<void(const std::string&, std::string&)>> ServerCoroutinePool::g_mapId2Service;
@@ -31,10 +30,14 @@ ServerCoroutinePool::ServerCoroutinePool(uint32_t iCoroutineNum/* = 配置数*/)
 	int iReuseportOpt = 1;
 	assert(!setsockopt(m_iListenFd, SOL_SOCKET, SO_REUSEPORT, &iReuseportOpt, sizeof(iReuseportOpt)));
 	assert(!bind(m_iListenFd, (struct sockaddr *)&addr, sizeof(addr)));
+	INFO("bind succ. fd %d", m_iListenFd);
 	assert(!listen(m_iListenFd, 128));
+	INFO("listening... fd %d", m_iListenFd);
 }
 
 void ServerCoroutinePool::InitCoroutines() {
+	INFO("begin InitCoroutines ... ");
+	// assert(0);
 	CoroutinePool::InitCoroutines();
 	assert(m_iCoroutineNum >= 3);
 	// 初始化 accept 协程
@@ -49,17 +52,26 @@ void ServerCoroutinePool::InitCoroutines() {
 }
 
 void ServerCoroutinePool::AcceptCoroutine() {
+	WARN("in accept coroutine, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
 	while (true) {
+		WARN("in accept coroutine pos 2, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
 		static int iTestCount = 0;
-		DEBUG("TEST: accept coroutine running, tick %d", iTestCount++);
+		INFO("TEST: accept coroutine running, tick %d", iTestCount++);
 		int iFd = accept(m_iListenFd, nullptr, nullptr);
 		if (iFd < 0) {
+			INFO("ret %d, errno %d, errmsg %s", iFd, errno, strerror(errno));
 			CoroutinePool::GetThis()->WaitFdEventWithTimeout(m_iListenFd, EPOLLIN, 1000);
+			WARN("in accept coroutine pos 3, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
 			continue;
 		}
+		INFO("conn succ. fd %d", iFd);
 		SetNonBlock(iFd);
+		INFO("core ??? 1");
 		m_queFd.push(iFd);
+		INFO("core ??? 2");
+		WARN("in accept coroutine pos 4, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
 		m_oCoSemaphore.Post();
+		INFO("core ??? 3");
 	}
 }
 
@@ -78,7 +90,7 @@ void ServerCoroutinePool::ReadWriteCoroutine() {
 			std::string sReq;
 			int iRet = Read(iFd, sReq);
 			if (iRet != 0) {
-				ERROR("read req error. ret %d", iRet);
+				ERROR("read req error. ret %d, fd %d", iRet, iFd);
 				break;
 			}
 			// 暂时定下协议是：4 字节服务编号、然后是消息。
@@ -100,7 +112,9 @@ void ServerCoroutinePool::ReadWriteCoroutine() {
 		}
 	}
 	if (pBuffer != nullptr) {
+		std::cout << "这里来两次？？？" << std::endl;
 		free(pBuffer);
+		pBuffer = nullptr;
 	}
 }
 
@@ -115,8 +129,10 @@ int ServerCoroutinePool::Read(int iFd, std::string &sMessage, uint32_t iRelative
 	uint64_t iNow = GetCurrentTimeMs(), iTimeOut = iNow + iRelativeTimeout;
 	while ((iNow = GetCurrentTimeMs()) < iTimeOut) {
 		int iRet = read(iFd, pBuffer, g_iBufferSize);
+		DEBUG("read iRet = %d", iRet);
 		if (iRet < 0) {
 			if (errno == EAGAIN) {
+				DEBUG("ret = -1 but is here");
 				CoroutinePool::GetThis()->WaitFdEventWithTimeout(iFd, EPOLLIN, iTimeOut - iNow);
 				continue;
 			} else {
@@ -129,13 +145,21 @@ int ServerCoroutinePool::Read(int iFd, std::string &sMessage, uint32_t iRelative
 			iResult = 2;
 			break;
 		}
-		sMessage += pBuffer;
+		// sMessage += pBuffer; // 由于 pBuffer[0] 很可能是 0，所以一定是错的，即使第一个不是 0，这样写也不行！！！中间有 0 还是寄掉
+								// 同理，strlen 函数在这里也是无济于事的！！！
+		sMessage += std::string(pBuffer, pBuffer + iRet);
 		memset(pBuffer, 0, iRet);
 		// 暂时定下协议是：4 字节消息体长度 + 消息体。（关于 req id 可以在消息体里面再定）
 		// TODO: 消息正确性有 tcp 包着了，自己没必要再验证。
+		std::string sLog;
+		for (char c : sMessage) {
+			sLog += "_" + std::to_string((int)c);
+		}
+		DEBUG("sMessage: [%s], len %zu", sLog.c_str(), sMessage.size());
 		if (bHasReceiveHead == false && sMessage.length() >= 4) {
 			bHasReceiveHead = true;
 			iMessageLen = ByteStr2UInt(sMessage.substr(0, 4));
+			DEBUG("iMessageLen: %u", iMessageLen);
 			sMessage.erase(0, 4);
 		}
 		if (bHasReceiveHead == true && sMessage.length() >= iMessageLen) {
@@ -150,17 +174,21 @@ int ServerCoroutinePool::Read(int iFd, std::string &sMessage, uint32_t iRelative
 }
 
 int ServerCoroutinePool::Write(int iFd, std::string &sMessage, uint32_t iRelativeTimeout/* = -1*/) {
+	// std::cout << "你们在干啥。。" << std::endl;
 	uint32_t iWrotenLen = 0;
 	sMessage = UInt2ByteStr(sMessage.length()) + sMessage;
 	int iResult = -1;
 	uint64_t iNow = GetCurrentTimeMs(), iTimeOut = iNow + iRelativeTimeout;
 	while ((iNow = GetCurrentTimeMs()) < iTimeOut && iWrotenLen < sMessage.length()) {
 		int iRet = write(iFd, sMessage.c_str() + iWrotenLen, sMessage.length() - iWrotenLen);
+		DEBUG("write iRet = %d", iRet);
 		if (iRet < 0) {
 			if (errno == EAGAIN) {
+				DEBUG("write fail and EAGAIN...");
 				CoroutinePool::GetThis()->WaitFdEventWithTimeout(iFd, EPOLLOUT, iTimeOut - iNow);
 				continue;
 			} else {
+				ERROR("write fail finally.. fd %d, errno %d, errmsg %s", iFd, errno, strerror(errno));
 				iResult = 1;
 				break;
 			}
@@ -172,10 +200,15 @@ int ServerCoroutinePool::Write(int iFd, std::string &sMessage, uint32_t iRelativ
 		}
 	}
 	if (iWrotenLen >= sMessage.length()) {
+		DEBUG("write succ! fd %d", iFd);
 		return 0;
 	}
 	close(iFd);
 	return iResult;
+}
+
+void ServerCoroutinePool::RegisterService(uint32_t iServiceId, std::function<void(const std::string &, std::string &)> funService) {
+	g_mapId2Service[iServiceId] = std::move(funService);
 }
 
 }

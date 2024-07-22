@@ -14,6 +14,7 @@ public:
 	CoSemaphore(int iCount = 0);
 	void Post();
 	void Wait();
+	int GetCount();
 private:
 	int m_iCount;
 	std::list<TimeEvent::ptr> m_listWait;

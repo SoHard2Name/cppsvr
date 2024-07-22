@@ -13,6 +13,17 @@ CoSwap:                      # 定义 CoSwap 符号，只考虑 64 位的
     movq %r13, 32(%rdi)
     movq %r14, 40(%rdi)
     movq %r15, 48(%rdi)
+    
+    # 本来以下这些都是 caller-saved 的，但是实测编译的时候如果
+    # 程序员写的 asm 函数里面修改到了某些寄存器，然后调用返回之
+    # 后还是用 asm 去使用了这些寄存器的值，发现并没有恢复，而是
+    # 被 被调用者 修改后的值。
+    movq %rdi, 56(%rdi)
+    movq %rsi, 64(%rdi)
+    movq %rdx, 72(%rdi)
+    movq %rcx, 80(%rdi)
+    movq %r8, 88(%rdi)
+    movq %r9, 96(%rdi)
 
     movq 0(%rsi), %rbx
     movq 8(%rsi), %rsp
@@ -21,10 +32,13 @@ CoSwap:                      # 定义 CoSwap 符号，只考虑 64 位的
     movq 32(%rsi), %r13
     movq 40(%rsi), %r14
     movq 48(%rsi), %r15
-    movq 56(%rsi), %rdi      # rdi 本就是 caller-saved 的，但这里由于可能是要调用协程的函数
-                             #（并不是在“恢复调用者上下文”），所以还是要设置上 rdi 的，至于
-                             # 56(%rsi) 的值调用这个之前自己设置好。
-                             # 由于我确定只会有一个参数，所以就只搞了 rdi，其他的不管。
+
+    movq 56(%rsi), %rdi
+    movq 72(%rsi), %rdx
+    movq 80(%rsi), %rcx
+    movq 88(%rsi), %r8
+    movq 96(%rsi), %r9
+    movq 64(%rsi), %rsi      # 特别注意 rsi 需要在这里才能设置！否则别人用的 rsi 就是乱的了。
 
     ret                      # CoSwap 结束，跳到 rsi 上下文对应的位置：
                              # 1. 可能是调用函数，则正好设置好了调用函数的 rsp、rbp、rdi 这些

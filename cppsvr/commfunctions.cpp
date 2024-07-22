@@ -73,7 +73,7 @@ void SetNonBlock(int iFd) {
 uint32_t ByteStr2UInt(const std::string &sStr) {
 	uint32_t iNum = 0;
 	memcpy(&iNum, sStr.c_str(), 4);
-	return 0;
+	return iNum;
 }
 
 std::string UInt2ByteStr(uint32_t iNum) {

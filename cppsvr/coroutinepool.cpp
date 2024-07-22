@@ -5,6 +5,7 @@
 
 namespace cppsvr {
 
+
 static std::atomic<uint32_t> g_iId{0};
 thread_local CoroutinePool *t_pCurrentCoroutinePool = nullptr;
 
@@ -18,20 +19,19 @@ CoroutinePool::~CoroutinePool() {
 	if (m_pThread) {
 		m_pThread->Join();
 		delete m_pThread;
+		m_pThread = nullptr;
 	}
 	if (m_iEpollFd >= 0) {
 		close(m_iEpollFd);
 	}
-	for (auto pCoroutine : m_vecCoroutine) {
+	for (auto &pCoroutine : m_vecCoroutine) {
 		if (pCoroutine) {
 			delete pCoroutine;
+			pCoroutine = nullptr;
 		}
 	}
 }
 
-void CoroutinePool::Run() {
-	m_pThread = new Thread(std::bind(&CoroutinePool::ThreadRun, this), cppsvr::StrFormat("CoroutunePool_%u_Thread", m_iId));
-}
 
 void CoroutinePool::AddActive(TimeEvent::ptr pTimeEvent) {
 	m_listActiveEvent.push_back(pTimeEvent);
@@ -56,24 +56,28 @@ void CoroutinePool::DefaultProcess(Coroutine* pCoroutine) {
 }
 
 void CoroutinePool::WaitFdEventWithTimeout(int iFd, int iEpollEvent, uint32_t iRelativeTimeout) {
-	epoll_event oEpollEvent = {};
-	oEpollEvent.events = iEpollEvent | EPOLLET;
 	auto pTimeEvent = std::make_shared<TimeEvent>(GetCurrentTimeMs() + iRelativeTimeout,
 						nullptr, std::bind(&DefaultProcess, Coroutine::GetThis()));
 	pTimeEvent->m_funPrepare = std::bind(&DefaultPrepare, pTimeEvent);
 	GetThis()->m_oTimer.AddTimeEvent(pTimeEvent);
 	DEBUG("TEST: pTimeEvent belong list %d", pTimeEvent->m_iBelongList);
-	oEpollEvent.data.ptr = &pTimeEvent;
-	int iRet = epoll_ctl(GetThis()->m_iEpollFd, EPOLL_CTL_ADD, iFd, &oEpollEvent);
-	if (iRet) {
-		ERROR("EPOLL_CTL_ADD error. errno %d, errmsg %s", errno, strerror(errno));
+	if (iFd != -1) {
+		epoll_event oEpollEvent = {};
+		oEpollEvent.events = iEpollEvent | EPOLLET;
+		oEpollEvent.data.ptr = &pTimeEvent;
+		int iRet = epoll_ctl(GetThis()->m_iEpollFd, EPOLL_CTL_ADD, iFd, &oEpollEvent);
+		if (iRet) {
+			ERROR("EPOLL_CTL_ADD error. errno %d, errmsg %s", errno, strerror(errno));
+		}
 	}
 	DEBUG("TEST: one coroutine will swap out and wait");
 	Coroutine::GetThis()->SwapOut();
 	DEBUG("TEST: one routine swap in and continue");
-	iRet = epoll_ctl(GetThis()->m_iEpollFd, EPOLL_CTL_DEL, iFd, nullptr);
-	if (iRet) {
-		ERROR("EPOLL_CTL_DEL error. errno %d, errmsg %s", errno, strerror(errno));
+	if (iFd != -1) {
+		int iRet = epoll_ctl(GetThis()->m_iEpollFd, EPOLL_CTL_DEL, iFd, nullptr);
+		if (iRet) {
+			ERROR("EPOLL_CTL_DEL error. errno %d, errmsg %s", errno, strerror(errno));
+		}
 	}
 }
 
@@ -82,6 +86,10 @@ void CoroutinePool::InitCoroutines() {
 	// 初始化日志协程，专门每隔一段时间就把缓冲区内容弄
 	// 到全局，全局缓冲区内容会由主线程不断输出到文件。
 	
+}
+
+void CoroutinePool::Run() {
+	m_pThread = new Thread(std::bind(&CoroutinePool::ThreadRun, this), cppsvr::StrFormat("CoroutunePool_%u_Thread", m_iId));
 }
 
 void CoroutinePool::ThreadRun() {
@@ -93,19 +101,17 @@ void CoroutinePool::ThreadRun() {
 	// 初始化各个协程。
 	InitCoroutines();
 	// 事件循环
-	DEBUG("TEST: init coroutines end. begin event loop...");
-	const int iEventsSize = 1024, iWaitTimeMs = 1000; // 毫秒级的定时器
+	INFO("init coroutines end. begin event loop...");
+	const int iEventsSize = 1024, iWaitTimeMs = 100; // 毫秒级的定时器
 	epoll_event *pEpollEvents = new epoll_event[iEventsSize];
 	memset(pEpollEvents, 0, sizeof(epoll_event) * iEventsSize);
 	while (true) {
-		static int iTestCount = 0;
-		if (iTestCount++ % 1000 == 0) {
-			std::cout << "??? \n";
-		}
+		// std::cout << "??? \n";
 		int iRet = epoll_wait(m_iEpollFd, pEpollEvents, iEventsSize, iWaitTimeMs);
-		if (iRet != 0) {
-			std::cout << "iRet is not zero: " << iRet << std::endl;
-		}
+		INFO("epoll wait ret = %d", iRet);
+		// if (iRet != 0) {
+		// 	std::cout << "iRet is not zero: " << iRet << std::endl;
+		// }
 		if (iRet < 0) {
 			if (errno != EINTR) {
 				ERROR("epoll_wait error. ret %d", iRet);
@@ -125,19 +131,26 @@ void CoroutinePool::ThreadRun() {
 				}
 			}
 		}
+		DEBUG("can come here.");
 		m_oTimer.GetAllTimeoutEvent(m_listActiveEvent);
-		if (m_listActiveEvent.size() > 0) {
-			std::cout << "m_listActiveEvent size > 0 : " << m_listActiveEvent.size() << std::endl;
-		}
+		INFO("end get time out, m_listActiveEvent size %zu", m_listActiveEvent.size());
+		// if (m_listActiveEvent.size() > 0) {
+		// 	std::cout << "m_listActiveEvent size > 0 : " << m_listActiveEvent.size() << std::endl;
+		// }
 		for (auto it = m_listActiveEvent.begin(); it != m_listActiveEvent.end(); ++it) {
 			auto pTimeEvent = *it;
 			if (pTimeEvent->m_funProcess) {
 				pTimeEvent->m_funProcess();
+				DEBUG("son swap out and turn to father");
 			}
 		}
+		DEBUG("why stop..");
 		m_listActiveEvent.clear();
 	}
-	delete []pEpollEvents;
+	if (pEpollEvents) {
+		delete []pEpollEvents;
+		pEpollEvents = nullptr;
+	}
 }
 
 }

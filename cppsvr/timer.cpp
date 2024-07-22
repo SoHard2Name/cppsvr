@@ -66,27 +66,32 @@ void Timer::GetAllTimeoutEvent(std::list<TimeEvent::ptr> &listResult) {
 	uint32_t iCount = m_iCurrentTime - iPreTime + 1;
 	uint32_t iPreIndex = m_iCurrentIndex;
 	m_iCurrentIndex = (m_iCurrentIndex + iCount - 1) % m_vecTimeEvent.size();
+	DEBUG(".... iCount = %u", iCount);
+	// 必须分两步走，否则会造成死循环。
+	std::list<TimeEvent::ptr> listTemp; // 并且必须先弄到这里面，因为 listResult 本身是可能会有东西的。
 	for (int i = 0; i < iCount; i++) {
-		auto &listTimeEvent = m_vecTimeEvent[(iPreIndex + i) % m_vecTimeEvent.size()];
-		for (auto it = listTimeEvent.begin(); it != listTimeEvent.end(); it++) {
-			TimeEvent::ptr pTimeEvent = *it;
-			if (pTimeEvent->m_iExpireTime > m_iCurrentTime) {
-				AddTimeEvent(pTimeEvent);
-			} else {
-				listResult.push_back(pTimeEvent);
-				// 是重复事件，还要再添加上去新事件。注意到这里会改动已经 push 进
-				// result 列表的内容，但没事，因为用到时候用的是里面的函数而已。
-				if (pTimeEvent->m_iInterval > 0) {
-					uint32_t iInterval = pTimeEvent->m_iInterval;
-					// 算准下次会出现的地方
-					uint64_t iTimeDiff = ((m_iCurrentTime - pTimeEvent->m_iExpireTime) / iInterval + 1) * iInterval;
-					pTimeEvent->m_iExpireTime += iTimeDiff;
-					// 添加新事件
-					AddTimeEvent(pTimeEvent);
-				}
-			}
-		}
-		listTimeEvent.clear();
+		listTemp.splice(listTemp.end(), m_vecTimeEvent[(iPreIndex + i) % m_vecTimeEvent.size()]);
 	}
+	for (auto it = listTemp.begin(); it != listTemp.end();) {
+		TimeEvent::ptr pTimeEvent = *it;
+		if (pTimeEvent->m_iExpireTime > m_iCurrentTime) {
+			listResult.erase(it++);
+			AddTimeEvent(pTimeEvent);
+		} else {
+			// 是重复事件，还要再添加上去新事件。注意到这里会改动已经 push 进
+			// result 列表的内容，但没事，因为用到时候用的是里面的函数而已。
+			if (pTimeEvent->m_iInterval > 0) {
+				uint32_t iInterval = pTimeEvent->m_iInterval;
+				// 算准下次会出现的地方
+				uint64_t iTimeDiff = ((m_iCurrentTime - pTimeEvent->m_iExpireTime) / iInterval + 1) * iInterval;
+				pTimeEvent->m_iExpireTime += iTimeDiff;
+				// 添加新事件
+				AddTimeEvent(pTimeEvent);
+			}
+			++it;
+		}
+	}
+	listResult.splice(listResult.end(), listTemp);
 }
+
 }

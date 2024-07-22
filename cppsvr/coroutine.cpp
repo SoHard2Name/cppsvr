@@ -37,6 +37,7 @@ Coroutine::CoroutineContext::CoroutineContext(uint32_t iStackSize, Coroutine *pC
 Coroutine::CoroutineContext::~CoroutineContext() {
 	if (m_pStack) {
 		free(m_pStack);
+		m_pStack = nullptr;
 	}
 }
 
@@ -75,6 +76,7 @@ uint64_t Coroutine::GetId() {
 }
 
 void Coroutine::SwapIn() {
+	assert (this != GetThis());
 	m_pFather = GetThis();
 	SetThis(this);
 	CoSwap(&m_pFather->m_oContext, &m_oContext);

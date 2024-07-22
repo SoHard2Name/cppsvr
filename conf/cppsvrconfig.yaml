@@ -4,7 +4,7 @@ Logger:
   # 一个日志文件最多的字节数（这里设置 4MB，默认 4MB）
   MaxSize: 4194304
   # 日志器输出日志的最低等级（默认 DEBUG）
-  Level: DEBUG
+  Level: INFO
   # 是否在控制台展示（默认 true）
   Console: true
 
