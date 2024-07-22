@@ -8,7 +8,7 @@ int iFailCount = 0, connerr = 0;
 class TestClient : public cppsvr::CoroutinePool {
 	RUN_FUNC_DECL(TestClient);
 public:
-	TestClient() : CoroutinePool(4) {
+	TestClient() : CoroutinePool() {
 		
 	}
 
