@@ -52,11 +52,14 @@ private:
 				connsucc++;
 			}
 			INFO("conn succ. fd %d", iFd);
-			// 每100ms请求一次
-			cppsvr::Timer::GetThis()->AddRelativeTimeEvent(10, nullptr, 
-				std::bind(CoroutinePool::DefaultProcess, cppsvr::Coroutine::GetThis()), 100);
+			// // 每100ms请求一次
+			// auto pTimeEvent = cppsvr::Timer::GetThis()->AddRelativeTimeEvent(10, nullptr, 
+			// 	std::bind(CoroutinePool::DefaultProcess, cppsvr::Coroutine::GetThis()), 100);
+			// ↑ 错误的，任何时刻不允许有两个或以上的切入协程的事件存在！！！
 			DEBUG("what???");
 			while (true) {
+				// 这样的话没问题，因为每时每刻只会有一个
+				cppsvr::CoroutinePool::GetThis()->WaitFdEventWithTimeout(-1, -1, 100);
 				cppsvr::Coroutine::GetThis()->SwapOut();
 				std::string sReq = cppsvr::UInt2ByteStr(1u) + "World", sResp = "";
 				int iRet = cppsvr::ServerCoroutinePool::Write(iFd, sReq);
@@ -64,10 +67,13 @@ private:
 					ERROR("write req error. ret %d, fd %d", iRet, iFd);
 					break;
 				}
-				iRet = cppsvr::ServerCoroutinePool::Read(iFd, sResp);
+				iRet = cppsvr::ServerCoroutinePool::Read(iFd, sResp, 1000);
 				if (iRet != 0) {
-					ERROR("read rsp error. ret %d, fd %d", iRet, iFd);
-					break;
+					ERROR("read resp error. ret %d, fd %d", iRet, iFd);
+					close(iFd);
+					// cppsvr::Timer::GetThis()->DeleteTimeEvent(pTimeEvent);
+					INFO("??? why core");
+					return;
 				}
 				DEBUG("TEST: this time req end, req [%s], resp [%s]", sReq.c_str(), sResp.c_str());
 				if (sResp == "Hello World") {

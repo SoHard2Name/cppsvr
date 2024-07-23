@@ -29,10 +29,10 @@ public:
 	static void SetThis(Timer *pCurrentTimer);
 
 	// 特别注意：传的是相对时间！一般只会用到这个
-	void AddRelativeTimeEvent(uint32_t iRelativeTime, std::function<void()> funPrepare, std::function<void()> funProcess, uint32_t iInterval = 0);
-	void AddAbsoluteTimeEvent(uint64_t iAbsoluteTime, std::function<void()> funPrepare, std::function<void()> funProcess, uint32_t iInterval = 0);
+	TimeEvent::ptr AddRelativeTimeEvent(uint32_t iRelativeTime, std::function<void()> funPrepare, std::function<void()> funProcess, uint32_t iInterval = 0);
+	TimeEvent::ptr AddAbsoluteTimeEvent(uint64_t iAbsoluteTime, std::function<void()> funPrepare, std::function<void()> funProcess, uint32_t iInterval = 0);
 	// 注意这些直接用到 time event 结构体的，传的是绝对时间
-	void AddTimeEvent(TimeEvent::ptr pTimeEvent);
+	TimeEvent::ptr AddTimeEvent(TimeEvent::ptr pTimeEvent);
 	void DeleteTimeEvent(TimeEvent::ptr pTimeEvent);
 	void GetAllTimeoutEvent(std::list<TimeEvent::ptr> &listResult);
 

@@ -194,7 +194,7 @@ int ServerCoroutinePool::Write(int iFd, std::string &sMessage, uint32_t iRelativ
 	uint64_t iNow = GetCurrentTimeMs(), iTimeOut = iNow + iRelativeTimeout;
 	while ((iNow = GetCurrentTimeMs()) < iTimeOut && iWrotenLen < sMessage.length()) {
 		int iRet = write(iFd, sMessage.c_str() + iWrotenLen, sMessage.length() - iWrotenLen);
-		DEBUG("write iRet = %d", iRet);
+		INFO("write iRet = %d", iRet);
 		if (iRet < 0) {
 			if (errno == EAGAIN) {
 				DEBUG("write fail and EAGAIN...");

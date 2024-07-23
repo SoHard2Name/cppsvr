@@ -27,30 +27,32 @@ void Timer::SetThis(Timer *pCurrentTimer) {
 	t_pCurrentTimer = pCurrentTimer;
 }
 
-void Timer::AddRelativeTimeEvent(uint32_t iRelativeTime, std::function<void()> funPrepare, std::function<void()> funProcess, uint32_t iInterval/* = 0*/) {
-	AddTimeEvent(std::make_shared<TimeEvent>(GetCurrentTimeMs() + iRelativeTime, std::move(funPrepare), std::move(funProcess), iInterval));
+TimeEvent::ptr Timer::AddRelativeTimeEvent(uint32_t iRelativeTime, std::function<void()> funPrepare, std::function<void()> funProcess, uint32_t iInterval/* = 0*/) {
+	return AddTimeEvent(std::make_shared<TimeEvent>(GetCurrentTimeMs() + iRelativeTime, std::move(funPrepare), std::move(funProcess), iInterval));
 }
 
-void Timer::AddAbsoluteTimeEvent(uint64_t iAbsoluteTime, std::function<void()> funPrepare, std::function<void()> funProcess, uint32_t iInterval/* = 0*/) {
-	AddTimeEvent(std::make_shared<TimeEvent>(iAbsoluteTime, std::move(funPrepare), std::move(funProcess), iInterval));
+TimeEvent::ptr Timer::AddAbsoluteTimeEvent(uint64_t iAbsoluteTime, std::function<void()> funPrepare, std::function<void()> funProcess, uint32_t iInterval/* = 0*/) {
+	return AddTimeEvent(std::make_shared<TimeEvent>(iAbsoluteTime, std::move(funPrepare), std::move(funProcess), iInterval));
 }
 
-void Timer::AddTimeEvent(TimeEvent::ptr pTimeEvent) {
+TimeEvent::ptr Timer::AddTimeEvent(TimeEvent::ptr pTimeEvent) {
 	if (!m_iCurrentTime) {
 		m_iCurrentTime = GetCurrentTimeMs();
 		m_iCurrentIndex = 0;
 	}
 	if (pTimeEvent->m_iExpireTime < m_iCurrentTime) {
 		ERROR("event expire time is smaller than now");
-		return;
+		return pTimeEvent;
 	}
 	uint32_t iSize = m_vecTimeEvent.size();
 	int iTimeDiff = std::min<uint64_t>(pTimeEvent->m_iExpireTime - m_iCurrentTime, iSize - 1);
-	int iBelongList = (m_iCurrentIndex + iTimeDiff) % iSize + 1;
+	int iBelongList = (m_iCurrentIndex + iTimeDiff) % iSize;
 	auto *pList = &m_vecTimeEvent[iBelongList];
 	pList->push_back(pTimeEvent);
-	pList->back()->m_iBelongList = iBelongList;
-	pList->back()->m_itIterInList = --pList->end();
+	// 因为是指针，所以直接修 pTimeEvent 的成员就行。
+	pTimeEvent->m_iBelongList = iBelongList;
+	pTimeEvent->m_itIterInList = --pList->end();
+	return pTimeEvent;
 }
 
 void Timer::DeleteTimeEvent(TimeEvent::ptr pTimeEvent) {

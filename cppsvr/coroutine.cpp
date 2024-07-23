@@ -63,8 +63,12 @@ void Coroutine::SetThis(Coroutine *pCoroutine) {
 void Coroutine::DoWork(Coroutine *pCoroutine) {
 	if (pCoroutine->m_funUserFunc) {
 		pCoroutine->m_funUserFunc();
+		pCoroutine->m_funUserFunc = nullptr;
 	}
+	INFO("???why..");
 	pCoroutine->SwapOut();
+	ERROR("coroutine can not come here.");
+	assert(0);
 }
 
 // 用于切换协程的函数，指定其汇编语言为 asm 符号 CoSwap。
@@ -85,6 +89,7 @@ void Coroutine::SwapIn() {
 void Coroutine::SwapOut() {
 	assert(m_pFather);
 	SetThis(m_pFather);
+	INFO("????why...");
 	CoSwap(&m_oContext, &m_pFather->m_oContext);
 }
 
