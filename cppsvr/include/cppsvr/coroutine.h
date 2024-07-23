@@ -12,7 +12,7 @@ public:
 	struct CoroutineContext {
 		CoroutineContext(uint32_t iStackSize, Coroutine *pCoroutine);
 		~CoroutineContext();
-		void *m_pArgs[13];
+		void *m_pArgs[8];
 		char *m_pStack;
 		uint32_t m_iStackSize;
 	};

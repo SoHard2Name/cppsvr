@@ -12,12 +12,10 @@
 namespace cppsvr {
 
 class ServerCoroutinePool : public CoroutinePool {
-
-RUN_FUNC_DECL(ServerCoroutinePool);
-
 public:
 	ServerCoroutinePool(uint32_t iCoroutineNum = CppSvrConfig::GetSingleton()->GetCoroutineNum());
-	void InitCoroutines();
+	~ServerCoroutinePool();
+	virtual void InitCoroutines() override;
 
 	void AcceptCoroutine();
 	void ReadWriteCoroutine();

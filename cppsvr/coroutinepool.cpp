@@ -16,6 +16,7 @@ CoroutinePool::CoroutinePool(uint32_t iCoroutineNum/* = 配置的协程数*/) : 
 }
 
 CoroutinePool::~CoroutinePool() {
+	// 注意每个子类都要有这个东西，放第一个
 	if (m_pThread) {
 		m_pThread->Join();
 		delete m_pThread;
@@ -108,7 +109,7 @@ void CoroutinePool::ThreadRun() {
 	while (true) {
 		// std::cout << "??? \n";
 		int iRet = epoll_wait(m_iEpollFd, pEpollEvents, iEventsSize, iWaitTimeMs);
-		INFO("epoll wait ret = %d", iRet);
+		// INFO("epoll wait ret = %d", iRet);
 		// if (iRet != 0) {
 		// 	std::cout << "iRet is not zero: " << iRet << std::endl;
 		// }
@@ -133,7 +134,7 @@ void CoroutinePool::ThreadRun() {
 		}
 		DEBUG("can come here.");
 		m_oTimer.GetAllTimeoutEvent(m_listActiveEvent);
-		INFO("end get time out, m_listActiveEvent size %zu", m_listActiveEvent.size());
+		// INFO("end get time out, m_listActiveEvent size %zu", m_listActiveEvent.size());
 		// if (m_listActiveEvent.size() > 0) {
 		// 	std::cout << "m_listActiveEvent size > 0 : " << m_listActiveEvent.size() << std::endl;
 		// }

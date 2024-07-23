@@ -6,10 +6,11 @@ int iFailCount = 0, connerr = 0;
 
 
 class TestClient : public cppsvr::CoroutinePool {
-	RUN_FUNC_DECL(TestClient);
 public:
 	TestClient() : CoroutinePool() {
-		
+	}
+	~TestClient() {
+		MUST_WAIT_THREAD_IN_EVERY_SON_CLASS_DESTRCUTOR_FIRST_LINE
 	}
 
 	void InitCoroutines() {
@@ -92,8 +93,6 @@ private:
 	}
 	
 };
-
-RUN_FUNC_IMPL(TestClient);
 
 
 int main() {

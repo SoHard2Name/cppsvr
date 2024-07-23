@@ -4,8 +4,6 @@
 
 namespace cppsvr {
 
-RUN_FUNC_IMPL(ServerCoroutinePool);
-
 // 初始化。
 std::unordered_map<uint32_t, std::function<void(const std::string&, std::string&)>> ServerCoroutinePool::g_mapId2Service;
 
@@ -33,6 +31,21 @@ ServerCoroutinePool::ServerCoroutinePool(uint32_t iCoroutineNum/* = 配置数*/)
 	INFO("bind succ. fd %d", m_iListenFd);
 	assert(!listen(m_iListenFd, 128));
 	INFO("listening... fd %d", m_iListenFd);
+}
+
+ServerCoroutinePool::~ServerCoroutinePool() {
+	// 每个继承于 CoroutinePool 的类的析构里面都应该有这个东西！！！
+	// 并且放第一个，否则属于子类的东西就被销毁了，虚函数什么的就乱了，因为虚表被销毁了。
+	MUST_WAIT_THREAD_IN_EVERY_SON_CLASS_DESTRCUTOR_FIRST_LINE
+	if (m_iListenFd >= 0) {
+		close(m_iListenFd);
+	}
+	while (m_queFd.size()) {
+		int iFd = m_queFd.front();
+		if (iFd >= 0) {
+			close(iFd);
+		}
+	}
 }
 
 void ServerCoroutinePool::InitCoroutines() {
