@@ -5,6 +5,7 @@
 #include "cppsvrconfig.h"
 #include "sys/epoll.h"
 #include "timer.h"
+#include "noncopyable.h"
 
 namespace cppsvr {
 
@@ -20,6 +21,7 @@ namespace cppsvr {
 	}
 
 class CoroutinePool {
+	NON_COPY_ABLE(CoroutinePool);
 public:
 	CoroutinePool(uint32_t iCoroutineNum = CppSvrConfig::GetSingleton()->GetCoroutineNum());
 	virtual ~CoroutinePool();
@@ -32,6 +34,10 @@ public:
 	static void DefaultPrepare(TimeEvent::ptr pTimeEvent);
 	static void DefaultProcess(Coroutine *pCoroutine);
 	static void WaitFdEventWithTimeout(int iFd, int iEpollEvent, uint32_t iRelativeTimeout);
+
+	// 如果失败或者超时了都自动关闭 fd。
+	static int Read(int iFd, std::string &sMessage, uint32_t iRelativeTimeout = UINT32_MAX);
+	static int Write(int iFd, std::string &sMessage, uint32_t iRelativeTimeout = UINT32_MAX);
 
 protected:
 	// 子类自己设置各个协程要执行的函数

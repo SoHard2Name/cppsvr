@@ -62,12 +62,12 @@ private:
 				// 这样的话没问题，因为每时每刻只会有一个
 				cppsvr::CoroutinePool::GetThis()->WaitFdEventWithTimeout(-1, -1, 100);
 				std::string sReq = cppsvr::UInt2ByteStr(1u) + "World", sResp = "";
-				int iRet = cppsvr::SubReactor::Write(iFd, sReq);
+				int iRet = cppsvr::CoroutinePool::Write(iFd, sReq);
 				if (iRet != 0) {
 					ERROR("write req error. ret %d, fd %d", iRet, iFd);
 					break;
 				}
-				iRet = cppsvr::SubReactor::Read(iFd, sResp, 1000);
+				iRet = cppsvr::CoroutinePool::Read(iFd, sResp, 1000);
 				if (iRet != 0) {
 					ERROR("read resp error. ret %d, fd %d", iRet, iFd);
 					iFailCount++;

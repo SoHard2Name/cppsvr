@@ -8,10 +8,20 @@
 #include "sys/epoll.h"
 #include "sys/socket.h"
 #include "arpa/inet.h"
+#include "vector"
+#include "atomic"
 
 namespace cppsvr {
 
+// 子响应器有多个，负责处理连接，跟客户端交互。
+// 其中一个协程定期把日志从本线程缓冲区输送到全局缓冲区，
+// 本线程实际打印日志都只是打到这个线程缓冲区上。
+// 还有一个线程专门监听一个管道，当被唤醒之后就把连接加入
+// 到任务队列中，然后 post 唤醒等待的工作协程。
+// 剩下的是工作线程。
+
 class SubReactor : public CoroutinePool {
+	NON_COPY_ABLE(SubReactor);
 public:
 	SubReactor(uint32_t iCoroutineNum = CppSvrConfig::GetSingleton()->GetCoroutineNum());
 	~SubReactor();
@@ -20,9 +30,6 @@ public:
 	void AcceptCoroutine();
 	void ReadWriteCoroutine();
 	
-	// 如果失败或者超时了都自动关闭 fd。
-	static int Read(int iFd, std::string &sMessage, uint32_t iRelativeTimeout = UINT32_MAX);
-	static int Write(int iFd, std::string &sMessage, uint32_t iRelativeTimeout = UINT32_MAX);
 
 	// 这个保证是在单线程情况下进行。
 	static void RegisterService(uint32_t iServiceId, std::function<void(const std::string&, std::string&)> funService);
@@ -34,7 +41,10 @@ private:
 	
 private:
 	int m_iListenFd;
-	std::queue<int> m_queFd;
+	int iPipeFds[2];
+	std::atomic<int> m_iConnectNum;
+	std::list<int> m_listFdBuffer;
+	std::list<int> m_listFd;
 	CoSemaphore m_oCoSemaphore;
 };
 
