@@ -7,7 +7,7 @@ int iFailCount = 0, connerr = 0;
 
 class TestClient : public cppsvr::CoroutinePool {
 public:
-	TestClient() : CoroutinePool() {
+	TestClient() : CoroutinePool(200) {
 	}
 	~TestClient() {
 		MUST_WAIT_THREAD_IN_EVERY_SON_CLASS_DESTRCUTOR_FIRST_LINE
@@ -56,26 +56,27 @@ private:
 			// auto pTimeEvent = cppsvr::Timer::GetThis()->AddRelativeTimeEvent(10, nullptr, 
 			// 	std::bind(CoroutinePool::DefaultProcess, cppsvr::Coroutine::GetThis()), 100);
 			// ↑ 错误的，任何时刻不允许有两个或以上的切入协程的事件存在！！！
-			DEBUG("what???");
+			// ERROR("what???");
 			while (true) {
+				// cppsvr::Coroutine::GetThis()->SwapOut();
 				// 这样的话没问题，因为每时每刻只会有一个
 				cppsvr::CoroutinePool::GetThis()->WaitFdEventWithTimeout(-1, -1, 100);
-				cppsvr::Coroutine::GetThis()->SwapOut();
 				std::string sReq = cppsvr::UInt2ByteStr(1u) + "World", sResp = "";
-				int iRet = cppsvr::ServerCoroutinePool::Write(iFd, sReq);
+				int iRet = cppsvr::SubReactor::Write(iFd, sReq);
 				if (iRet != 0) {
 					ERROR("write req error. ret %d, fd %d", iRet, iFd);
 					break;
 				}
-				iRet = cppsvr::ServerCoroutinePool::Read(iFd, sResp, 1000);
+				iRet = cppsvr::SubReactor::Read(iFd, sResp, 1000);
 				if (iRet != 0) {
 					ERROR("read resp error. ret %d, fd %d", iRet, iFd);
+					iFailCount++;
 					close(iFd);
 					// cppsvr::Timer::GetThis()->DeleteTimeEvent(pTimeEvent);
-					INFO("??? why core");
+					// ERROR("??? why core");
 					return;
 				}
-				DEBUG("TEST: this time req end, req [%s], resp [%s]", sReq.c_str(), sResp.c_str());
+				// ERROR("TEST: this time req end, req [%s], resp [%s]", sReq.c_str(), sResp.c_str());
 				if (sResp == "Hello World") {
 					iSuccCount++;
 				} else {

@@ -11,10 +11,10 @@
 
 namespace cppsvr {
 
-class ServerCoroutinePool : public CoroutinePool {
+class SubReactor : public CoroutinePool {
 public:
-	ServerCoroutinePool(uint32_t iCoroutineNum = CppSvrConfig::GetSingleton()->GetCoroutineNum());
-	~ServerCoroutinePool();
+	SubReactor(uint32_t iCoroutineNum = CppSvrConfig::GetSingleton()->GetCoroutineNum());
+	~SubReactor();
 	virtual void InitCoroutines() override;
 
 	void AcceptCoroutine();

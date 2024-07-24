@@ -91,8 +91,13 @@ void CoroutinePool::InitCoroutines() {
 	
 }
 
-void CoroutinePool::Run() {
-	m_pThread = new Thread(std::bind(&CoroutinePool::ThreadRun, this), cppsvr::StrFormat("CoroutunePool_%u_Thread", m_iId));
+void CoroutinePool::Run(bool bUseCaller/* = false*/) {
+	if (bUseCaller) {
+		Thread::SetThreadName(StrFormat("CoroutunePool_%u_Thread_Use_Caller", m_iId));
+		ThreadRun();
+	} else {
+		m_pThread = new Thread(std::bind(&CoroutinePool::ThreadRun, this), StrFormat("CoroutunePool_%u_Thread", m_iId));
+	}
 }
 
 void CoroutinePool::ThreadRun() {

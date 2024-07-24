@@ -1,13 +1,13 @@
-#include "cppsvr/servercoroutinepool.h"
+#include "cppsvr/subreactor.h"
 #include "cppsvr/commfunctions.h"
 #include "cstring"
 
 namespace cppsvr {
 
 // 初始化。
-std::unordered_map<uint32_t, std::function<void(const std::string&, std::string&)>> ServerCoroutinePool::g_mapId2Service;
+std::unordered_map<uint32_t, std::function<void(const std::string&, std::string&)>> SubReactor::g_mapId2Service;
 
-ServerCoroutinePool::ServerCoroutinePool(uint32_t iCoroutineNum/* = 配置数*/) : 
+SubReactor::SubReactor(uint32_t iCoroutineNum/* = 配置数*/) : 
 		CoroutinePool(iCoroutineNum), m_queFd(), m_oCoSemaphore(0) {
 	m_iListenFd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	assert(m_iListenFd >= 0);
@@ -33,7 +33,7 @@ ServerCoroutinePool::ServerCoroutinePool(uint32_t iCoroutineNum/* = 配置数*/)
 	INFO("listening... fd %d", m_iListenFd);
 }
 
-ServerCoroutinePool::~ServerCoroutinePool() {
+SubReactor::~SubReactor() {
 	// 每个继承于 CoroutinePool 的类的析构里面都应该有这个东西！！！
 	// 并且放第一个，否则属于子类的东西就被销毁了，虚函数什么的就乱了，因为虚表被销毁了。
 	MUST_WAIT_THREAD_IN_EVERY_SON_CLASS_DESTRCUTOR_FIRST_LINE
@@ -48,23 +48,23 @@ ServerCoroutinePool::~ServerCoroutinePool() {
 	}
 }
 
-void ServerCoroutinePool::InitCoroutines() {
+void SubReactor::InitCoroutines() {
 	INFO("begin InitCoroutines ... ");
 	// assert(0);
 	CoroutinePool::InitCoroutines();
 	assert(m_iCoroutineNum >= 3);
 	// 初始化 accept 协程
 	auto &pAcceptCoroutine = m_vecCoroutine[1];
-	pAcceptCoroutine = new Coroutine(std::bind(&ServerCoroutinePool::AcceptCoroutine, this));
+	pAcceptCoroutine = new Coroutine(std::bind(&SubReactor::AcceptCoroutine, this));
 	pAcceptCoroutine->SwapIn();
 	// 剩下的都是 read write 协程，里面也处理业务
 	for (int i = 2; i < m_iCoroutineNum; i++) {
-		m_vecCoroutine[i] = new Coroutine(std::bind(&ServerCoroutinePool::ReadWriteCoroutine, this));
+		m_vecCoroutine[i] = new Coroutine(std::bind(&SubReactor::ReadWriteCoroutine, this));
 		m_vecCoroutine[i]->SwapIn();
 	}
 }
 
-void ServerCoroutinePool::AcceptCoroutine() {
+void SubReactor::AcceptCoroutine() {
 	WARN("in accept coroutine, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
 	while (true) {
 		WARN("in accept coroutine pos 2, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
@@ -88,7 +88,7 @@ void ServerCoroutinePool::AcceptCoroutine() {
 	}
 }
 
-void ServerCoroutinePool::ReadWriteCoroutine() {
+void SubReactor::ReadWriteCoroutine() {
 	// DEBUG("one ReadWriteCoroutine be init");
 	const int iBufferSize = 1024;
 	char *pBuffer = (char*)malloc(iBufferSize);
@@ -134,7 +134,7 @@ void ServerCoroutinePool::ReadWriteCoroutine() {
 static const int g_iBufferSize = 1024;
 thread_local char *pBuffer = (char*)malloc(g_iBufferSize);
 
-int ServerCoroutinePool::Read(int iFd, std::string &sMessage, uint32_t iRelativeTimeout/* = -1*/) {
+int SubReactor::Read(int iFd, std::string &sMessage, uint32_t iRelativeTimeout/* = -1*/) {
 	memset(pBuffer, 0, g_iBufferSize);
 	bool bHasReceiveHead = false;
 	uint32_t iMessageLen = 0;
@@ -186,7 +186,7 @@ int ServerCoroutinePool::Read(int iFd, std::string &sMessage, uint32_t iRelative
 	return iResult;
 }
 
-int ServerCoroutinePool::Write(int iFd, std::string &sMessage, uint32_t iRelativeTimeout/* = -1*/) {
+int SubReactor::Write(int iFd, std::string &sMessage, uint32_t iRelativeTimeout/* = -1*/) {
 	// std::cout << "你们在干啥。。" << std::endl;
 	uint32_t iWrotenLen = 0;
 	sMessage = UInt2ByteStr(sMessage.length()) + sMessage;
@@ -220,7 +220,7 @@ int ServerCoroutinePool::Write(int iFd, std::string &sMessage, uint32_t iRelativ
 	return iResult;
 }
 
-void ServerCoroutinePool::RegisterService(uint32_t iServiceId, std::function<void(const std::string &, std::string &)> funService) {
+void SubReactor::RegisterService(uint32_t iServiceId, std::function<void(const std::string &, std::string &)> funService) {
 	g_mapId2Service[iServiceId] = std::move(funService);
 }
 

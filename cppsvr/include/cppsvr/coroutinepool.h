@@ -23,7 +23,7 @@ class CoroutinePool {
 public:
 	CoroutinePool(uint32_t iCoroutineNum = CppSvrConfig::GetSingleton()->GetCoroutineNum());
 	virtual ~CoroutinePool();
-	void Run();
+	void Run(bool bUseCaller = false);
 	void AddActive(TimeEvent::ptr pTimeEvent);
 
 	static CoroutinePool *GetThis();
