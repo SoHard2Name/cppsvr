@@ -2,6 +2,7 @@
 #include "cppsvr/commfunctions.h"
 #include "atomic"
 #include "cstring"
+#include "coroutinepool.h"
 
 namespace cppsvr {
 
@@ -9,19 +10,14 @@ namespace cppsvr {
 static std::atomic<uint32_t> g_iId{0};
 thread_local CoroutinePool *t_pCurrentCoroutinePool = nullptr;
 
-CoroutinePool::CoroutinePool(uint32_t iCoroutineNum/* = 配置的协程数*/) : m_iId(++g_iId), m_iCoroutineNum(iCoroutineNum),
-		m_vecCoroutine(iCoroutineNum, nullptr), m_pThread(nullptr), m_oTimer() {
+CoroutinePool::CoroutinePool() : m_iId(++g_iId), m_vecCoroutine(), m_pThread(nullptr), m_oTimer() {
 	m_iEpollFd = epoll_create(1);
 	assert(m_iEpollFd >= 0);
 }
 
 CoroutinePool::~CoroutinePool() {
 	// 注意每个子类都要有这个东西，放第一个
-	if (m_pThread) {
-		m_pThread->Join();
-		delete m_pThread;
-		m_pThread = nullptr;
-	}
+	WaitThreadRunEnd();
 	if (m_iEpollFd >= 0) {
 		close(m_iEpollFd);
 	}
@@ -32,7 +28,6 @@ CoroutinePool::~CoroutinePool() {
 		}
 	}
 }
-
 
 void CoroutinePool::AddActive(TimeEvent::ptr pTimeEvent) {
 	m_listActiveEvent.push_back(pTimeEvent);
@@ -84,11 +79,19 @@ void CoroutinePool::WaitFdEventWithTimeout(int iFd, int iEpollEvent, uint32_t iR
 	}
 }
 
-void CoroutinePool::InitCoroutines() {
-	assert(m_iCoroutineNum >= 1);
-	// 初始化日志协程，专门每隔一段时间就把缓冲区内容弄
-	// 到全局，全局缓冲区内容会由主线程不断输出到文件。
-	
+// 每个 InitCoroutines 的函数末尾都要调且仅调用一次这个函数！
+void CoroutinePool::AllCoroutineStart() {
+	for (Coroutine *pCoroutine : m_vecCoroutine) {
+		pCoroutine->SwapIn();
+	}
+}
+
+void CoroutinePool::WaitThreadRunEnd() {
+	if (m_pThread) {
+		m_pThread->Join();
+		delete m_pThread;
+		m_pThread = nullptr;
+	}
 }
 
 void CoroutinePool::Run(bool bUseCaller/* = false*/) {

@@ -7,8 +7,8 @@ namespace cppsvr {
 // 初始化。
 std::unordered_map<uint32_t, std::function<void(const std::string&, std::string&)>> SubReactor::g_mapId2Service;
 
-SubReactor::SubReactor(uint32_t iCoroutineNum/* = 配置数*/) : 
-		CoroutinePool(iCoroutineNum), m_iConnectNum(0), m_listFdBuffer(), m_listFd(), m_oCoSemaphore(0) {
+SubReactor::SubReactor(uint32_t iWorkerCoroutineNum/* = 配置数*/) : m_iWorkerCoroutineNum(iWorkerCoroutineNum), 
+		m_iConnectNum(0), m_listFdBuffer(), m_listFd(), m_oCoSemaphore(0) {
 
 	memset(iPipeFds, -1, sizeof(iPipeFds));
 	assert(!pipe(iPipeFds));
@@ -40,7 +40,7 @@ SubReactor::SubReactor(uint32_t iCoroutineNum/* = 配置数*/) :
 SubReactor::~SubReactor() {
 	// 每个继承于 CoroutinePool 的类的析构里面都应该有这个东西！！！
 	// 并且放第一个，否则属于子类的东西就被销毁了，虚函数什么的就乱了，因为虚表被销毁了。
-	MUST_WAIT_THREAD_IN_EVERY_SON_CLASS_DESTRCUTOR_FIRST_LINE
+	WaitThreadRunEnd();
 	if (m_iListenFd >= 0) {
 		close(m_iListenFd);
 	}
@@ -64,40 +64,13 @@ void SubReactor::InitCoroutines() {
 	INFO("begin InitCoroutines ... ");
 	// assert(0);
 	CoroutinePool::InitCoroutines();
-	assert(m_iCoroutineNum >= 3);
-	// 初始化 accept 协程
-	auto &pAcceptCoroutine = m_vecCoroutine[1];
-	pAcceptCoroutine = new Coroutine(std::bind(&SubReactor::AcceptCoroutine, this));
-	pAcceptCoroutine->SwapIn();
+	// // 初始化 accept 协程
+	// m_vecCoroutine.push_back(new Coroutine(std::bind(&SubReactor::AcceptCoroutine, this)));
 	// 剩下的都是 read write 协程，里面也处理业务
-	for (int i = 2; i < m_iCoroutineNum; i++) {
-		m_vecCoroutine[i] = new Coroutine(std::bind(&SubReactor::ReadWriteCoroutine, this));
-		m_vecCoroutine[i]->SwapIn();
+	for (int i = 0; i < m_iWorkerCoroutineNum; i++) {
+		m_vecCoroutine.push_back(new Coroutine(std::bind(&SubReactor::ReadWriteCoroutine, this)));
 	}
-}
-
-void SubReactor::AcceptCoroutine() {
-	WARN("in accept coroutine, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
-	while (true) {
-		WARN("in accept coroutine pos 2, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
-		static int iTestCount = 0;
-		INFO("TEST: accept coroutine running, tick %d", iTestCount++);
-		int iFd = accept(m_iListenFd, nullptr, nullptr);
-		if (iFd < 0) {
-			INFO("ret %d, errno %d, errmsg %s", iFd, errno, strerror(errno));
-			CoroutinePool::GetThis()->WaitFdEventWithTimeout(m_iListenFd, EPOLLIN, 1000);
-			WARN("in accept coroutine pos 3, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
-			continue;
-		}
-		INFO("conn succ. fd %d", iFd);
-		SetNonBlock(iFd);
-		INFO("core ??? 1");
-		m_listFd.push_back(iFd);
-		INFO("core ??? 2");
-		WARN("in accept coroutine pos 4, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
-		m_oCoSemaphore.Post();
-		INFO("core ??? 3");
-	}
+	AllCoroutineStart();
 }
 
 void SubReactor::ReadWriteCoroutine() {
@@ -109,7 +82,6 @@ void SubReactor::ReadWriteCoroutine() {
 		m_oCoSemaphore.Wait();
 		int iFd = m_listFd.front();
 		m_listFd.pop_front();
-		m_iConnectNum++;
 		// TODO: 改成根据连接超时来弄循环，这样能关闭那些太久没有通信的连接。如果有交流则更新超时时间。
 		while (true) {
 			DEBUG("TEST: one service.");

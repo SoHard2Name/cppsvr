@@ -10,14 +10,14 @@ public:
 	TestClient() : CoroutinePool(200) {
 	}
 	~TestClient() {
-		MUST_WAIT_THREAD_IN_EVERY_SON_CLASS_DESTRCUTOR_FIRST_LINE
+		MUST_WAIT_THREAD_IN_EVERY_SON_CLASS_INHERITED_FROM_COROUTINEPOOL_DESTRCUTOR_FIRST_LINE
 	}
 
 	void InitCoroutines() {
-		assert(m_iCoroutineNum >= 2);
+		assert(m_iWorkerCoroutineNum >= 2);
 		m_vecCoroutine[1] = new cppsvr::Coroutine(Report);
 		m_vecCoroutine[1]->SwapIn();
-		for (int i = 2; i < m_iCoroutineNum; i++) {
+		for (int i = 2; i < m_iWorkerCoroutineNum; i++) {
 			m_vecCoroutine[i] = new cppsvr::Coroutine(ClientCoroutine);
 			m_vecCoroutine[i]->SwapIn();
 		}

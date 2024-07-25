@@ -1,6 +1,8 @@
 #pragma once
 #include "coroutinepool.h"
+#include "subreactor.h"
 #include "logger.h"
+#include "cstring"
 
 namespace cppsvr {
 
@@ -9,14 +11,17 @@ namespace cppsvr {
 
 class MainReactor : public CoroutinePool {
 public:
-	MainReactor(uint32_t iCoroutineNum = CppSvrConfig::GetSingleton()->GetCoroutineNum());
+	MainReactor(uint32_t iWorkerThreadNum = cppsvr::CppSvrConfig::GetSingleton()->GetWorkerThreadNum());
 	~MainReactor();
 
+	// 覆写基类的 Run 函数。
+	void Run();
 	virtual void InitCoroutines() override;
 	void AcceptCoroutine();
 
 private:
 	int m_iListenFd;
+	std::vector<SubReactor> m_vecSubReactor;
 };
 
 

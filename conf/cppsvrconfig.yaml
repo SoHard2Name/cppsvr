@@ -8,14 +8,6 @@ Logger:
   # 是否在控制台展示（默认 true）
   Console: true
 
-Coroutine:
-  # 工作线程数（默认 1）
-  ThreadNum: 4
-  # 单个工作线程的协程数（默认 100）
-  CoroutineNum: 100
-  # 协程栈大小（这里 64 KB，默认 128 KB）
-  StackSize: 65536
-
 Server:
   # ip（默认 0.0.0.0）
   IP: 127.0.0.1
@@ -23,4 +15,11 @@ Server:
   Port: 1335
   # 是否复用地址（允许关闭后立即重启服务，即使前面的还在 time_wait 状态。默认为 false）
   ReuseAddr: true
+  # 工作线程数，也即子响应器数（默认 1）
+  WorkerThreadNum: 4
+  # 单个工作线程的协程池中的协程数（默认 100）
+  WorkerCoroutineNum: 100
+  # 单个协程的栈大小（这里 64 KB，默认 128 KB）
+  StackSize: 65536
+
 

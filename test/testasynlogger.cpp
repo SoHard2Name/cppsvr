@@ -12,9 +12,9 @@ void TestThread() {
 int main() {
 	cppsvr::Thread::SetThreadName("main");
 	cppsvr::CppSvrConfig::GetSingleton()->LogConfigInfo();
-	const int iThreadNum = 20;
-	std::vector<cppsvr::Thread::ptr> vecThreads(iThreadNum);
-	for (int i = 0; i < iThreadNum; i++) {
+	const int iWorkerThreadNum = 20;
+	std::vector<cppsvr::Thread::ptr> vecThreads(iWorkerThreadNum);
+	for (int i = 0; i < iWorkerThreadNum; i++) {
 		vecThreads[i] = std::make_shared<cppsvr::Thread>(TestThread, cppsvr::StrFormat("TestThread_%d", i));
 	}
 	for (auto &oThread : vecThreads) {

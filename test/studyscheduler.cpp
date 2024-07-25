@@ -5,8 +5,8 @@
 
 class Scheduler {
 public:
-	Scheduler(uint32_t iThreadNum) : m_iThreadNum(iThreadNum),
-									 m_vecThreadPool(iThreadNum) {} // 记得初始化线程池。。
+	Scheduler(uint32_t iWorkerThreadNum) : m_iWorkerThreadNum(iWorkerThreadNum),
+									 m_vecThreadPool(iWorkerThreadNum) {} // 记得初始化线程池。。
 
 	// 目前保证的是这个只有单线程的情况下会用，所以暂时不用加锁。
 	void AddTask(std::function<void()> funTask) {
@@ -14,13 +14,13 @@ public:
 	}
 
 	void Run() {
-		for (int i = 0; i < m_iThreadNum; i++) {
+		for (int i = 0; i < m_iWorkerThreadNum; i++) {
 			m_vecThreadPool[i] = std::make_shared<cppsvr::Thread>(
 				// 成员函数要求一定要这样指定，不能漏了类名。
 				std::bind(&Scheduler::ThreadRun, this),
 				cppsvr::StrFormat("Thread_%d", i));
 		}
-		for (int i = 0; i < m_iThreadNum; i++) {
+		for (int i = 0; i < m_iWorkerThreadNum; i++) {
 			m_vecThreadPool[i]->Join();
 		}
 	}
@@ -47,7 +47,7 @@ private:
 	}
 
 public:
-	uint32_t m_iThreadNum;
+	uint32_t m_iWorkerThreadNum;
 	std::vector<cppsvr::Thread::ptr> m_vecThreadPool;
 	std::list<std::function<void()>> m_listTasks;
 	cppsvr::Mutex m_oTaskListMutex;

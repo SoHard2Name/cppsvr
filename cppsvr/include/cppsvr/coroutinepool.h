@@ -13,19 +13,12 @@ namespace cppsvr {
 // 原来有 SO_REUSEPORT 这种东西，直接就允许多个（线程
 // 的）fd 去监听同一个 ip-port，由内核来实现负载均衡。
 
-#define MUST_WAIT_THREAD_IN_EVERY_SON_CLASS_DESTRCUTOR_FIRST_LINE    \
-	if (m_pThread) {    \
-		m_pThread->Join();    \
-		delete m_pThread;    \
-		m_pThread = nullptr;    \
-	}
-
 class CoroutinePool {
 	NON_COPY_ABLE(CoroutinePool);
 public:
-	CoroutinePool(uint32_t iCoroutineNum = CppSvrConfig::GetSingleton()->GetCoroutineNum());
+	CoroutinePool();
 	virtual ~CoroutinePool();
-	void Run(bool bUseCaller = false);
+	virtual void Run(bool bUseCaller = false);
 	void AddActive(TimeEvent::ptr pTimeEvent);
 
 	static CoroutinePool *GetThis();
@@ -40,8 +33,11 @@ public:
 	static int Write(int iFd, std::string &sMessage, uint32_t iRelativeTimeout = UINT32_MAX);
 
 protected:
+	void AllCoroutineStart();
+	// 注意每个子类的析构函数都要有这个东西，且放第一行！
+	void WaitThreadRunEnd();
 	// 子类自己设置各个协程要执行的函数
-	virtual void InitCoroutines();
+	virtual void InitCoroutines() = 0;
 
 private:
 	void ThreadRun();
@@ -49,7 +45,6 @@ private:
 protected:
 	int m_iId;
 	int m_iEpollFd;
-	uint32_t m_iCoroutineNum;
 	std::vector<Coroutine*> m_vecCoroutine;
 	Thread* m_pThread;
 	Timer m_oTimer;
