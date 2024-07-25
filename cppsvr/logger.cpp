@@ -3,9 +3,64 @@
 #include "cppsvr/cppsvrconfig.h"
 #include "cppsvr/thread.h"
 #include "cppsvr/coroutine.h"
+#include "cppsvr/mutex.h"
+#include "logger.h"
 
 namespace cppsvr {
 
+thread_local std::list<std::pair<uint64_t, std::string>> t_listLogBuffer;
+static std::list<std::pair<uint64_t, std::string>> g_listGlobalLogBuffer;
+static SpinLock oGlobalLogBufferMutex;
+
+std::list<std::pair<uint64_t, std::string>> &Logger::GetThisLogBuffer() {
+	return t_listLogBuffer;
+}
+
+bool IsEarlier(const std::pair<uint64_t, std::string> &pairTime2Log1, const std::pair<uint64_t, std::string> &pairTime2Log2) {
+	return pairTime2Log1.first < pairTime2Log2.first;
+}
+
+void Logger::PushLogToGlobalBuffer() {
+	std::list<std::pair<uint64_t, std::string>> listTemp;
+	{
+		SpinLock::ScopedLock oScopedLock(oGlobalLogBufferMutex);
+		std::swap(listTemp, g_listGlobalLogBuffer);
+	}
+	listTemp.merge(t_listLogBuffer, IsEarlier);
+	{
+		SpinLock::ScopedLock oScopedLock(oGlobalLogBufferMutex);
+		std::swap(listTemp, g_listGlobalLogBuffer);
+	}
+}
+
+void Logger::PullLogFromGlobalBuffer() {
+	std::list<std::pair<uint64_t, std::string>> listTemp;
+	{
+		SpinLock::ScopedLock oScopedLock(oGlobalLogBufferMutex);
+		std::swap(listTemp, g_listGlobalLogBuffer);
+	}
+	t_listLogBuffer.merge(listTemp, IsEarlier);
+}
+
+void Logger::StoreLogToDiskFile() {
+	uint64_t iNowMs = GetCurrentTimeMs();
+	for (auto it = t_listLogBuffer.begin(); it != t_listLogBuffer.end(); t_listLogBuffer.erase(it++)) {
+		// 保住这个区域，就能保证输出的日志都是有序的！本来不 +10 就是可以的，只不过考虑到前期可能有一点误差。
+		if (it->first + CppSvrConfig::GetSingleton()->GetFlushInterval() + 10 >= iNowMs) {
+			break;
+		}
+		const auto &sLog = it->second;
+		if (m_bConsole) {
+			std::cout << sLog;
+		}
+		m_oOutFileStream << sLog;
+		m_iCurrentLen += sLog.length();
+		if (m_iMaxSize > 0 && m_iCurrentLen >= m_iMaxSize) {
+			Rotate();
+		}
+	}
+	m_oOutFileStream.flush();
+}
 
 Logger::Logger() {
 	// 获取配置信息
@@ -70,11 +125,12 @@ void Logger::CloseFile() {
 
 void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char *sFormat, ...) {
 	if (m_eLevel > eLevel) return; // 等级低于日志等级的消息不做记录
-	assert(!m_oOutFileStream.fail());
+	// assert(!m_oOutFileStream.fail());
 	std::ostringstream oss;
 	
+	uint64_t iNowMs = GetCurrentTimeMs();
 	// 时间 毫秒数 (线程id,自定义线程名; 协程号) [等级] 文件名:行号 
-	oss << StrFormat("%s %d (%d,%s; %lu) [%s] %s:%d ", GetTimeNow().c_str(), (int)(GetCurrentTimeMs() % 1000), GetThreadId(),
+	oss << StrFormat("%s %d (%d,%s; %lu) [%s] %s:%d ", GetTimeNow().c_str(), (int)(iNowMs % 1000), GetThreadId(),
 					Thread::GetThreadName().c_str(), Coroutine::GetThis()->GetId(), GetLevelName(eLevel).c_str(), sFile, iLine);
 	
 	va_list pArgList;
@@ -84,27 +140,30 @@ void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char 
 	va_end(pArgList);
 	
 	oss << "\n";
-	const std::string &sTemp = oss.str();
+	GetThisLogBuffer().emplace_back(iNowMs, std::move(oss.str()));
 
-	{ // 写进日志文件
-		Mutex::ScopedLock oLogLock(m_oMutex);
-		m_oOutFileStream << sTemp;
-		m_iCurrentLen += sTemp.length();
+	// const std::string &sTemp = oss.str();
 
-		// 这样才能更新到磁盘上，待会一打开文件就能看到最新结果。
-		m_oOutFileStream.flush();
+	// { // 写进日志文件
+	// 	Mutex::ScopedLock oLogLock(m_oMutex);
+	// 	m_oOutFileStream << sTemp;
+	// 	m_iCurrentLen += sTemp.length();
 
-		if (m_iMaxSize > 0 && m_iCurrentLen >= m_iMaxSize) {
-			Rotate();
-		}
-	}
+	// 	// 这样才能更新到磁盘上，待会一打开文件就能看到最新结果。
+	// 	m_oOutFileStream.flush();
+
+	// 	if (m_iMaxSize > 0 && m_iCurrentLen >= m_iMaxSize) {
+	// 		Rotate();
+	// 	}
+	// }
 	
-	if (m_bConsole) {
-		std::cout << sTemp;
-	}
+	// if (m_bConsole) {
+	// 	std::cout << sTemp;
+	// }
 }
 
 void Logger::Rotate() { // 这个函数外已经有加锁了。
+	m_oOutFileStream.flush();
 	CloseFile();
 	// 不停 1ms 有可能两次封装的文件同名了。但不会很影响效率。
 	SleepMs(1);

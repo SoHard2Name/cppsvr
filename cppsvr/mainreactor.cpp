@@ -6,14 +6,15 @@
 
 // 睡了。。。
 
-// 改造：配置、这里创建几个子响应器，然后友元类，然后 找连接数最少的 -> 添加（记
+// 改造：配置、这里创建几个子响应器，然后 找连接数最少的 -> 添加（记
 // 得给他计数器加） + 唤醒，然后子响应器那边也要把所谓 accept 改改。
 
 // 改造第二阶段：日志器。
 
 namespace cppsvr {
 
-MainReactor::MainReactor(uint32_t iWorkerThreadNum/* = 配置数*/) : m_iListenFd(-1) {
+MainReactor::MainReactor(uint32_t iWorkerThreadNum/* = 配置数*/, 
+		uint32_t iWorkerCoroutineNum/* = 配置数*/) : m_iListenFd(-1) {
 	m_iListenFd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	assert(m_iListenFd >= 0);
 	SetNonBlock(m_iListenFd);
@@ -38,7 +39,7 @@ MainReactor::MainReactor(uint32_t iWorkerThreadNum/* = 配置数*/) : m_iListenF
 	INFO("listening... fd %d", m_iListenFd);
 	
 	for (int i = 0; i < iWorkerThreadNum; i++) {
-		
+		m_vecSubReactor.emplace_back(iWorkerCoroutineNum);
 	}
 }
 
@@ -60,11 +61,9 @@ void MainReactor::Run() {
 
 void MainReactor::InitCoroutines() {
 	// 初始化 accept 协程
-	auto *pAcceptCoroutine = new Coroutine(std::bind(&MainReactor::AcceptCoroutine, this));
-	m_vecCoroutine.push_back(pAcceptCoroutine);
+	m_vecCoroutine.push_back(new Coroutine(std::bind(&MainReactor::AcceptCoroutine, this)));
 	// 初始化推日志到磁盘的协程（它也是把公共区域拿到本线程的区域然后再来处理）
-	
-	
+	m_vecCoroutine.push_back(new Coroutine(std::bind(&MainReactor::StoreLogCoroutine, this)));
 	AllCoroutineStart();
 }
 
@@ -84,11 +83,26 @@ void MainReactor::AcceptCoroutine() {
 		INFO("conn succ. fd %d", iFd);
 		SetNonBlock(iFd);
 		INFO("core ??? 1");
-		m_listFd.push_back(iFd);
+		int iMin = INT32_MAX, iIndex = -1;
+		for (int i = 0; i < m_vecSubReactor.size(); i++) {
+			int iConnectNum = m_vecSubReactor[i].GetConnectNum();
+			if (iConnectNum < iMin) {
+				iMin = iConnectNum;
+				iIndex = i;
+			}
+		}
+		m_vecSubReactor[iIndex].AddFd(iFd);
 		INFO("core ??? 2");
-		WARN("in accept coroutine pos 4, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
-		m_oCoSemaphore.Post();
-		INFO("core ??? 3");
+	}
+}
+
+void MainReactor::StoreLogCoroutine() {
+	uint32_t iFlushInterval = CppSvrConfig::GetSingleton()->GetFlushInterval();
+	Timer::GetThis()->AddRelativeTimeEvent(iFlushInterval, nullptr, std::bind(DefaultProcess, Coroutine::GetThis()), iFlushInterval);
+	while (true) {
+		Logger::PullLogFromGlobalBuffer();
+		Logger::GetSingleton()->StoreLogToDiskFile();
+		Coroutine::GetThis()->SwapOut();
 	}
 }
 

@@ -103,6 +103,19 @@ void CoroutinePool::Run(bool bUseCaller/* = false*/) {
 	}
 }
 
+void CoroutinePool::InitLogReporterCoroutine() {
+	m_vecCoroutine.push_back(new Coroutine(std::bind(LogReporterCoroutine, this)));
+}
+
+void CoroutinePool::LogReporterCoroutine() {
+	uint32_t iFlushInterval = CppSvrConfig::GetSingleton()->GetFlushInterval();
+	Timer::GetThis()->AddRelativeTimeEvent(iFlushInterval, nullptr, std::bind(DefaultProcess, Coroutine::GetThis()), iFlushInterval);
+	while (true) {
+		Logger::PushLogToGlobalBuffer();
+		Coroutine::GetThis()->SwapOut();
+	}
+}
+
 void CoroutinePool::ThreadRun() {
 	// 设置线程变量
 	assert(!GetThis());

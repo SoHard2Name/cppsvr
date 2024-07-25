@@ -1,5 +1,6 @@
 #include "cppsvr/cppsvrconfig.h"
 #include "cppsvr/logger.h"
+#include "cppsvrconfig.h"
 
 namespace cppsvr {
 
@@ -12,6 +13,7 @@ CppSvrConfig::CppSvrConfig(std::string sFileName) : ConfigBase(sFileName, false)
 	GetNodeValue(oLoggerNode["Console"], true, m_bLogConsole);
 	GetNodeValue(oLoggerNode["Level"], "DEBUG", m_sLogLevel);
 	m_eLogLevel = Logger::GetLevelValue(m_sLogLevel);
+	GetNodeValue(oLoggerNode["FlushInterval"], 10u, m_iFlushInterval);
 	
 	// 服务器配置
 	const auto &oServerNode = m_oRootNode["Server"];
@@ -74,4 +76,9 @@ uint32_t CppSvrConfig::GetWorkerCoroutineNum() const {
 const std::string &CppSvrConfig::GetLogLevelName() const {
 	return m_sLogLevel;
 }
+
+uint32_t CppSvrConfig::GetFlushInterval() {
+	return m_iFlushInterval;
+}
+
 }

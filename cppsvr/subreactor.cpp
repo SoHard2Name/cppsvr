@@ -1,6 +1,7 @@
 #include "cppsvr/subreactor.h"
 #include "cppsvr/commfunctions.h"
 #include "cstring"
+#include "subreactor.h"
 
 namespace cppsvr {
 
@@ -9,48 +10,16 @@ std::unordered_map<uint32_t, std::function<void(const std::string&, std::string&
 
 SubReactor::SubReactor(uint32_t iWorkerCoroutineNum/* = 配置数*/) : m_iWorkerCoroutineNum(iWorkerCoroutineNum), 
 		m_iConnectNum(0), m_listFdBuffer(), m_listFd(), m_oCoSemaphore(0) {
-
-	memset(iPipeFds, -1, sizeof(iPipeFds));
-	assert(!pipe(iPipeFds));
-
-	m_iListenFd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	assert(m_iListenFd >= 0);
-	SetNonBlock(m_iListenFd);
-	auto &oCppSvrConfig = *CppSvrConfig::GetSingleton();
-	std::string sIp = oCppSvrConfig.GetIp();
-	struct sockaddr_in addr;
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = inet_addr(sIp.c_str()); // 这个表示监听主机的所有网卡
-	addr.sin_port = htons(oCppSvrConfig.GetPort());
-	if (oCppSvrConfig.GetReuseAddr()) {
-		// 这个是设置它能重用地址，也就是上次关闭后可能还处于 time wait 的时候就能立即复用了。
-		int iReuseaddrOpt = 1;
-		assert(!setsockopt(m_iListenFd, SOL_SOCKET, SO_REUSEADDR, &iReuseaddrOpt, sizeof(iReuseaddrOpt)));
-	}
-	// 这个是设置单个端口可以被多个 fd 绑定，这样不用让多个线程监听同一
-	// 个 fd 发生太多由于锁导致的线程切换，而是底层会自己分配 syn 请求。
-	int iReuseportOpt = 1;
-	assert(!setsockopt(m_iListenFd, SOL_SOCKET, SO_REUSEPORT, &iReuseportOpt, sizeof(iReuseportOpt)));
-	assert(!bind(m_iListenFd, (struct sockaddr *)&addr, sizeof(addr)));
-	INFO("bind succ. fd %d", m_iListenFd);
-	assert(!listen(m_iListenFd, 128));
-	INFO("listening... fd %d", m_iListenFd);
+	memset(m_iPipeFds, -1, sizeof(m_iPipeFds));
+	assert(!pipe(m_iPipeFds));
+	SetNonBlock(m_iPipeFds[1]);
 }
 
 SubReactor::~SubReactor() {
 	// 每个继承于 CoroutinePool 的类的析构里面都应该有这个东西！！！
 	// 并且放第一个，否则属于子类的东西就被销毁了，虚函数什么的就乱了，因为虚表被销毁了。
 	WaitThreadRunEnd();
-	if (m_iListenFd >= 0) {
-		close(m_iListenFd);
-	}
-	while (m_listFdBuffer.size()) {
-		int iFd = m_listFdBuffer.front();
-		m_listFdBuffer.pop_front();
-		if (iFd >= 0) {
-			close(iFd);
-		}
-	}
+	TransferFds();
 	while (m_listFd.size()) {
 		int iFd = m_listFd.front();
 		m_listFd.pop_front();
@@ -60,21 +29,32 @@ SubReactor::~SubReactor() {
 	}
 }
 
+void SubReactor::AddFd(int iFd) {
+	m_iConnectNum++;
+	SpinLock::ScopedLock oScopedLock(m_oFdBufferMutex);
+	m_listFdBuffer.push_back(iFd);
+	write(m_iPipeFds[0], "W", 1);
+}
+
+int SubReactor::GetConnectNum() {
+	return m_iConnectNum;
+}
+
 void SubReactor::InitCoroutines() {
 	INFO("begin InitCoroutines ... ");
-	// assert(0);
-	CoroutinePool::InitCoroutines();
-	// // 初始化 accept 协程
-	// m_vecCoroutine.push_back(new Coroutine(std::bind(&SubReactor::AcceptCoroutine, this)));
-	// 剩下的都是 read write 协程，里面也处理业务
+	// 把日志推到全局缓冲区。
+	InitLogReporterCoroutine();
+	// 专门将 fd 从 buffer 转移到 fdlist，并唤醒工作协程
+	m_vecCoroutine.push_back(new Coroutine(std::bind(&SubReactor::TransferFdsAndWakeUpWorkerCoroutine, this)));
+	// 工作协程
 	for (int i = 0; i < m_iWorkerCoroutineNum; i++) {
-		m_vecCoroutine.push_back(new Coroutine(std::bind(&SubReactor::ReadWriteCoroutine, this)));
+		m_vecCoroutine.push_back(new Coroutine(std::bind(&SubReactor::WorkerCoroutine, this)));
 	}
 	AllCoroutineStart();
 }
 
-void SubReactor::ReadWriteCoroutine() {
-	// DEBUG("one ReadWriteCoroutine be init");
+void SubReactor::WorkerCoroutine() {
+	// DEBUG("one WorkerCoroutine be init");
 	const int iBufferSize = 1024;
 	char *pBuffer = (char*)malloc(iBufferSize);
 	memset(pBuffer, 0, iBufferSize);
@@ -117,9 +97,27 @@ void SubReactor::ReadWriteCoroutine() {
 	}
 }
 
+void SubReactor::TransferFdsAndWakeUpWorkerCoroutine() {
+	char sBuffer[16];
+	while (true) {
+		WaitFdEventWithTimeout(m_iPipeFds[1], EPOLLIN, 1000);
+		while (read(m_iPipeFds[1], sBuffer, sizeof(sBuffer)) > 0);
+		int iTransferNum = TransferFds();
+		for (int i = 0; i < iTransferNum; i++) {
+			m_oCoSemaphore.Post();
+		}
+	}
+}
 
 void SubReactor::RegisterService(uint32_t iServiceId, std::function<void(const std::string &, std::string &)> funService) {
 	g_mapId2Service[iServiceId] = std::move(funService);
+}
+
+int SubReactor::TransferFds() {
+	SpinLock::ScopedLock oScopedLock(m_oFdBufferMutex);
+	int iBufferSize = m_listFdBuffer.size();
+	m_listFd.splice(m_listFd.end(), m_listFdBuffer);
+	return iBufferSize;
 }
 
 }

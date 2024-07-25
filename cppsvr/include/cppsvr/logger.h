@@ -13,7 +13,7 @@
 #include "mutex.h"
 #include "singleton.h"
 #include "configbase.h"
-
+#include "list"
 
 // TODO: 每个线程有一个协程是专门、定时处理日志的；有一个线程是专门把日志输出到文件的。
 
@@ -51,6 +51,11 @@ public:
 	void Log(Level eLevel, const char *sFile, int iLine, const char *sFormat, ...)
 		__attribute__((format(printf, 5, 6))); // file、line 分别为记录处所在的文件和行号
 
+	static std::list<std::pair<uint64_t, std::string>> &GetThisLogBuffer();
+	static void PushLogToGlobalBuffer();
+	static void PullLogFromGlobalBuffer();
+	void StoreLogToDiskFile();
+
 private:
 	void OpenFile();
 	void CloseFile();
@@ -64,7 +69,6 @@ private:
 	Level m_eLevel = LOG_DEBUG; // 日志等级，低于这个等级的日志不记录。
 	std::string m_sLevel = "DEBUG"; // 日志等级名称
 	bool m_bConsole = true; // 是否在控制台调试
-	Mutex m_oMutex; // 写锁，目前就是在输出日志那个时候需要锁，其他地方暂不需要。
 };
 
 

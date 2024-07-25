@@ -7,6 +7,8 @@ Logger:
   Level: WARN
   # 是否在控制台展示（默认 true）
   Console: true
+  # 日志刷新间隔（默认 10 ms）
+  FlushInterval: 10
 
 Server:
   # ip（默认 0.0.0.0）

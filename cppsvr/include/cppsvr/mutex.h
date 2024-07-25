@@ -193,14 +193,14 @@ private:
 	pthread_rwlock_t m_oLock;
 };
 
-class Spinlock {
+class SpinLock {
 public:
-	typedef ScopedLockImpl<Spinlock> ScopedLock;
-	Spinlock() {
+	typedef ScopedLockImpl<SpinLock> ScopedLock;
+	SpinLock() {
 		pthread_spin_init(&m_oMutex, 0);
 	}
 
-	~Spinlock() {
+	~SpinLock() {
 		pthread_spin_destroy(&m_oMutex);
 	}
 

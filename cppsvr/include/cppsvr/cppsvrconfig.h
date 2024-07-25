@@ -19,11 +19,11 @@ public:
 	Logger::Level GetLogLevelValue() const;
 	bool GetLogConsole() const;
 	const std::string &GetLogLevelName() const;
+	uint32_t GetFlushInterval();
 
 	uint32_t GetWorkerThreadNum() const;
 	uint32_t GetWorkerCoroutineNum() const;
 	uint32_t GetCoroutineStackSize() const;
-	
 	const std::string &GetIp() const;
 	uint32_t GetPort() const;
 	bool GetReuseAddr() const;
@@ -40,7 +40,8 @@ private:
 	bool m_bLogConsole; // 是否在控制台调试
 	Logger::Level m_eLogLevel; // 日志等级，低于这个等级的日志不记录。
 	std::string m_sLogLevel; // 日志等级的名称
-
+	uint32_t m_iFlushInterval; // 日志刷新时间间隔
+	
 	std::string m_sIp; // IP 地址
 	uint32_t m_iPort; // 服务端口
 	bool m_bReuseAddr; // 是否复用地址

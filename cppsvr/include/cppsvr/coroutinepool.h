@@ -38,6 +38,9 @@ protected:
 	void WaitThreadRunEnd();
 	// 子类自己设置各个协程要执行的函数
 	virtual void InitCoroutines() = 0;
+	// 日志直接的都是打在线程局部的缓冲区，汇总就是靠这个。
+	void InitLogReporterCoroutine();
+	void LogReporterCoroutine();
 
 private:
 	void ThreadRun();

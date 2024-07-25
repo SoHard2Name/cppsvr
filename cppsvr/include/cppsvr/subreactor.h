@@ -10,6 +10,7 @@
 #include "arpa/inet.h"
 #include "vector"
 #include "atomic"
+#include "mutex.h"
 
 namespace cppsvr {
 
@@ -27,24 +28,30 @@ public:
 	~SubReactor();
 	virtual void InitCoroutines() override;
 
-	void ReadWriteCoroutine();
-
 	// 这个保证是在单线程情况下进行。
 	static void RegisterService(uint32_t iServiceId, std::function<void(const std::string&, std::string&)> funService);
+	
+	void AddFd(int iFd);
+	int GetConnectNum();
 	
 private:
 	// 每个函数都是一进一出，进表示 req，出表示 resp。
 	// 每个服务器只需要通过在这个 map 上面注册服务就行，就是实现的时候还是要会使用本框架实现的 Read 函数之类。
 	static std::unordered_map<uint32_t, std::function<void(const std::string&, std::string&)>> g_mapId2Service;
+	
+	int TransferFds();
+	void WorkerCoroutine();
+	void TransferFdsAndWakeUpWorkerCoroutine();
 
 private:
 	uint32_t m_iWorkerCoroutineNum;
-	int m_iListenFd;
-	int iPipeFds[2];
+	int m_iPipeFds[2];
 	std::atomic<int> m_iConnectNum;
 	std::list<int> m_listFdBuffer;
 	std::list<int> m_listFd;
 	CoSemaphore m_oCoSemaphore;
+	// 因为明确获取锁后都是 O(1) 的简单操作，很少会冲突且很快会结束，所以用了自旋锁
+	SpinLock m_oFdBufferMutex;
 };
 
 }

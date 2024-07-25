@@ -11,13 +11,16 @@ namespace cppsvr {
 
 class MainReactor : public CoroutinePool {
 public:
-	MainReactor(uint32_t iWorkerThreadNum = cppsvr::CppSvrConfig::GetSingleton()->GetWorkerThreadNum());
+	MainReactor(uint32_t iWorkerThreadNum = cppsvr::CppSvrConfig::GetSingleton()->GetWorkerThreadNum(), 
+				uint32_t iWorkerCoroutineNum = cppsvr::CppSvrConfig::GetSingleton()->GetWorkerCoroutineNum());
 	~MainReactor();
 
-	// 覆写基类的 Run 函数。
 	void Run();
 	virtual void InitCoroutines() override;
+
+private:
 	void AcceptCoroutine();
+	void StoreLogCoroutine();
 
 private:
 	int m_iListenFd;
