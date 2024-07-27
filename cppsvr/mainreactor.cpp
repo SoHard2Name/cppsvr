@@ -20,10 +20,10 @@ MainReactor::MainReactor(uint32_t iWorkerThreadNum/* = 配置数*/,
 	SetNonBlock(m_iListenFd);
 	auto &oCppSvrConfig = *CppSvrConfig::GetSingleton();
 	std::string sIp = oCppSvrConfig.GetIp();
-	struct sockaddr_in addr;
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = inet_addr(sIp.c_str()); // 这个表示监听主机的所有网卡
-	addr.sin_port = htons(oCppSvrConfig.GetPort());
+	struct sockaddr_in oAddr;
+	oAddr.sin_family = AF_INET;
+	oAddr.sin_addr.s_addr = inet_addr(sIp.c_str()); // 这个表示监听主机的所有网卡
+	oAddr.sin_port = htons(oCppSvrConfig.GetPort());
 	if (oCppSvrConfig.GetReuseAddr()) {
 		// 这个是设置它能重用地址，也就是上次关闭后可能还处于 time wait 的时候就能立即复用了。
 		int iReuseaddrOpt = 1;
@@ -33,11 +33,11 @@ MainReactor::MainReactor(uint32_t iWorkerThreadNum/* = 配置数*/,
 	// // 个 fd 发生太多由于锁导致的线程切换，而是底层会自己分配 syn 请求。
 	// int iReuseportOpt = 1;
 	// assert(!setsockopt(m_iListenFd, SOL_SOCKET, SO_REUSEPORT, &iReuseportOpt, sizeof(iReuseportOpt)));
-	assert(!bind(m_iListenFd, (struct sockaddr *)&addr, sizeof(addr)));
+	assert(!bind(m_iListenFd, (struct sockaddr *)&oAddr, sizeof(oAddr)));
 	INFO("bind succ. fd %d", m_iListenFd);
 	assert(!listen(m_iListenFd, 128));
 	INFO("listening... fd %d", m_iListenFd);
-	
+
 	for (int i = 0; i < iWorkerThreadNum; i++) {
 		m_vecSubReactor.push_back(new SubReactor(iWorkerCoroutineNum));
 	}
