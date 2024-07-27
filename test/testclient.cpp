@@ -29,8 +29,7 @@ private:
 private:
 
 	static void ClientCoroutine() {
-		DEBUG(".....???");
-		// 创建 fd 应当放外边，否则里面要是慢一点，比如处于进行中状态，然后你就循环创建 fd，更容易寄掉。。
+		// 创建 fd 应当放外边，否则里面要是慢一点，否则比如处于进行中状态，然后你就循环创建 fd，直接寄掉。
 		int iFd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		assert(iFd >= 0);
 		cppsvr::SetNonBlock(iFd);
@@ -59,9 +58,7 @@ private:
 			// auto pTimeEvent = cppsvr::Timer::GetThis()->AddRelativeTimeEvent(10, nullptr, 
 			// 	std::bind(CoroutinePool::DefaultProcess, cppsvr::Coroutine::GetThis()), 100);
 			// ↑ 错误的，任何时刻不允许有两个或以上的切入协程的事件存在！！！
-			// ERROR("what???");
 			while (true) {
-				// cppsvr::Coroutine::GetThis()->SwapOut();
 				// 这样的话没问题，因为每时每刻只会有一个
 				cppsvr::CoroutinePool::GetThis()->WaitFdEventWithTimeout(-1, -1, 100);
 				std::string sReq = cppsvr::UInt2ByteStr(1u) + "World", sResp = "";
@@ -75,11 +72,9 @@ private:
 					ERROR("read resp error. ret %d, fd %d", iRet, iFd);
 					iFailCount++;
 					close(iFd);
-					// cppsvr::Timer::GetThis()->DeleteTimeEvent(pTimeEvent);
-					// ERROR("??? why core");
 					return;
 				}
-				// ERROR("TEST: this time req end, req [%s], resp [%s]", sReq.c_str(), sResp.c_str());
+				// DEBUG("req end. req [%s], resp [%s]", sReq.c_str(), sResp.c_str());
 				if (sResp == "Hello World") {
 					iSuccCount++;
 				} else {
@@ -89,8 +84,6 @@ private:
 		}
 	}
 	
-	
-	// 后续把这个重复干事的东西封装起来。
 	static void Report() {
 		// 每秒报告一次
 		cppsvr::Timer::GetThis()->AddRelativeTimeEvent(10, nullptr, 
@@ -103,7 +96,6 @@ private:
 	}
 	
 };
-
 
 int main() {
 	TestClient(300).Run();
