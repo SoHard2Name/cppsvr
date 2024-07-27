@@ -55,11 +55,11 @@ MainReactor::~MainReactor() {
 
 void MainReactor::Run(bool bUseCaller/* = false*/) {
 	// 启动子响应器
-	std::cout << "start subreactor.." << std::endl;
+	DEBUG("start subreactor..");
 	for (auto *pSubReactor : m_vecSubReactor) {
 		pSubReactor->Run();
 	}
-	std::cout << "start mainreactor.." << std::endl;
+	DEBUG("start mainreactor..");
 	CoroutinePool::Run(bUseCaller);
 }
 
