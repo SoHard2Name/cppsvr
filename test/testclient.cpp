@@ -16,7 +16,6 @@ public:
 	void InitCoroutines() {
 		InitLogReporterCoroutine();
 		m_vecCoroutine.push_back(new cppsvr::Coroutine(Report));
-		m_vecCoroutine[1]->SwapIn();
 		for (int i = 0; i < m_iWorkerCoroutineNum; i++) {
 			m_vecCoroutine.push_back(new cppsvr::Coroutine(ClientCoroutine));
 		}
