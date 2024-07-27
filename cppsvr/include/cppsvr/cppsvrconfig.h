@@ -7,8 +7,8 @@ namespace cppsvr {
 
 class CppSvrConfig : public ConfigBase {
 public:
-	static CppSvrConfig* GetSingleton() {
-		static CppSvrConfig oCppSvrConfig("./conf/cppsvrconfig.yaml");
+	static CppSvrConfig* GetSingleton(std::string sConfigFileName = "./conf/cppsvrconfig.yaml") {
+		static CppSvrConfig oCppSvrConfig(sConfigFileName);
 		return &oCppSvrConfig;
 	}
 
