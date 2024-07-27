@@ -14,5 +14,4 @@ enable_language(C ASM)
 set(CMAKE_BUILD_TYPE Debug)
 
 add_subdirectory(cppsvr)
-# add_subdirectory(test)
-add_subdirectory(test2)
+add_subdirectory(test)

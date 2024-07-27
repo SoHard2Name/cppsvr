@@ -9,22 +9,6 @@ link_libraries(commlib)
 
 add_compile_options(-Werror)
 
-
-# 注意下面这些很多都是被改版了的，很可能编译不过，后面做完再弄 example 就行
-
-# add_executable(testlogger testlogger.cpp)
-# add_executable(testyaml1 testyaml1.cpp)
-# add_executable(testyaml2 testyaml2.cpp)
-# add_executable(testthread testthread.cpp)
-# add_executable(testmutex testmutex.cpp)
-# add_executable(testcontext testcontext.cpp)
-# add_executable(testasynlogger testasynlogger.cpp)
-# add_executable(testpipe testpipe.cpp)
-# add_executable(testeventfd testeventfd.cpp)
-# add_executable(testsplit testsplit.cpp)
-# add_executable(testreactor testreactor.cpp)
-
-# add_executable(studyscheduler studyscheduler.cpp)
-# add_executable(studyassamblylanguage studyassamblylanguage.cpp)
-# add_executable(studyasm studyasm.cpp test3.S)
-
+add_executable(testserver testserver.cpp)
+add_executable(testcoroutine testcoroutine.cpp)
+add_executable(testclient testclient.cpp)
