@@ -45,7 +45,7 @@ void Logger::StoreLogToDiskFile() {
 	uint64_t iNowMs = GetCurrentTimeMs();
 	for (auto it = t_listLogBuffer.begin(); it != t_listLogBuffer.end(); t_listLogBuffer.erase(it++)) {
 		// 保住这个区域，就能保证输出的日志都是有序的！+ 100 为了防止有些虽然轮到了但还得稍微等一会再处理的协程。
-		if (it->first + CppSvrConfig::GetSingleton()->GetFlushInterval() + 100 >= iNowMs) {
+		if (it->first / 1000 + CppSvrConfig::GetSingleton()->GetFlushInterval() + 100 >= iNowMs) {
 			break;
 		}
 		const auto &sLog = it->second;
