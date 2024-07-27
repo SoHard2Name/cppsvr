@@ -4,13 +4,6 @@
 #include "arpa/inet.h"
 #include "cppsvr/commfunctions.h"
 
-// 睡了。。。
-
-// 改造：配置、这里创建几个子响应器，然后 找连接数最少的 -> 添加（记
-// 得给他计数器加） + 唤醒，然后子响应器那边也要把所谓 accept 改改。
-
-// 改造第二阶段：日志器。
-
 namespace cppsvr {
 
 MainReactor::MainReactor(uint32_t iWorkerThreadNum/* = 配置数*/, 
@@ -72,26 +65,20 @@ void MainReactor::InitCoroutines() {
 }
 
 void MainReactor::AcceptCoroutine() {
-	// WARN("in accept coroutine, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
 	while (true) {
 		std::string sLog;
 		for (int i = 0; i < m_vecSubReactor.size(); i++) {
 			sLog += StrFormat("%d,%d;", i, m_vecSubReactor[i]->GetConnectNum());
 		}
 		INFO("sub reactor conn status: %s", sLog.c_str());
-		// WARN("in accept coroutine pos 2, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
-		// static int iTestCount = 0;
-		// INFO("TEST: accept coroutine running, tick %d", iTestCount++);
 		int iFd = accept(m_iListenFd, nullptr, nullptr);
 		if (iFd < 0) {
-			// INFO("ret %d, errno %d, errmsg %s", iFd, errno, strerror(errno));
+			// DEBUG("ret %d, errno %d, errmsg %s", iFd, errno, strerror(errno));
 			CoroutinePool::GetThis()->WaitFdEventWithTimeout(m_iListenFd, EPOLLIN, 1000);
-			// WARN("in accept coroutine pos 3, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
 			continue;
 		}
 		INFO("conn succ. fd %d", iFd);
 		SetNonBlock(iFd);
-		// INFO("core ??? 1");
 		int iMin = INT32_MAX, iIndex = -1;
 		for (int i = 0; i < m_vecSubReactor.size(); i++) {
 			int iConnectNum = m_vecSubReactor[i]->GetConnectNum();
@@ -101,7 +88,6 @@ void MainReactor::AcceptCoroutine() {
 			}
 		}
 		m_vecSubReactor[iIndex]->AddFd(iFd);
-		// INFO("core ??? 2");
 	}
 }
 
