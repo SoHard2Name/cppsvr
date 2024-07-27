@@ -65,6 +65,13 @@ uint64_t GetCurrentTimeMs() {
 	return timestamp;
 }
 
+uint64_t GetCurrentTimeUs() {
+	struct timeval oTimeVal;
+	gettimeofday(&oTimeVal, NULL);
+	uint64_t timestamp = oTimeVal.tv_sec * 1000000ull + oTimeVal.tv_usec;
+	return timestamp;
+}
+
 void SetNonBlock(int iFd) {
 	int iFlag = fcntl(iFd, F_GETFL);
 	assert(!fcntl(iFd, F_SETFL, iFlag | O_NONBLOCK));

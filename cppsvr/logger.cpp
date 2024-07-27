@@ -126,7 +126,7 @@ void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char 
 	if (m_eLevel > eLevel) return; // 等级低于日志等级的消息不做记录
 	std::ostringstream oss;
 	
-	uint64_t iNowMs = GetCurrentTimeMs();
+	uint64_t iNowUs = GetCurrentTimeUs(), iNowMs = iNowUs / 1000;
 	// 时间 毫秒数 (线程id,自定义线程名; 协程号) [等级] 文件名:行号 
 	oss << StrFormat("%s %d (%d,%s; %lu) [%s] %s:%d ", GetTimeNow().c_str(), (int)(iNowMs % 1000), GetThreadId(),
 					Thread::GetThreadName().c_str(), Coroutine::GetThis()->GetId(), GetLevelName(eLevel).c_str(), sFile, iLine);
@@ -138,7 +138,7 @@ void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char 
 	va_end(pArgList);
 	
 	oss << "\n";
-	GetThisLogBuffer().emplace_back(iNowMs, std::move(oss.str()));
+	GetThisLogBuffer().emplace_back(iNowUs, std::move(oss.str()));
 }
 
 void Logger::Rotate() { // 这个函数外已经有加锁了。

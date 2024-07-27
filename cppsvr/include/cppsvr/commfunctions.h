@@ -27,6 +27,8 @@ std::string Trim(std::string sStr);
 // 注意这里面虽然涉及系统调用，但在 x86_64 系统中和普通的系统调用不同，这个开销特别小的。
 uint64_t GetCurrentTimeMs();
 
+uint64_t GetCurrentTimeUs();
+
 // 设置 fd 为非阻塞
 void SetNonBlock(int iFd);
 
