@@ -24,7 +24,7 @@ private:
 
 private:
 	int m_iListenFd;
-	std::vector<SubReactor> m_vecSubReactor;
+	std::vector<SubReactor*> m_vecSubReactor;
 };
 
 

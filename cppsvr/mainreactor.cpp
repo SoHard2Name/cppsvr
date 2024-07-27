@@ -1,4 +1,4 @@
-#include "mainreactor.h"
+#include "cppsvr/mainreactor.h"
 #include "sys/epoll.h"
 #include "sys/socket.h"
 #include "arpa/inet.h"
@@ -39,7 +39,7 @@ MainReactor::MainReactor(uint32_t iWorkerThreadNum/* = 配置数*/,
 	INFO("listening... fd %d", m_iListenFd);
 	
 	for (int i = 0; i < iWorkerThreadNum; i++) {
-		m_vecSubReactor.emplace_back(iWorkerCoroutineNum);
+		m_vecSubReactor.push_back(new SubReactor(iWorkerCoroutineNum));
 	}
 }
 
@@ -48,13 +48,21 @@ MainReactor::~MainReactor() {
 	if (m_iListenFd >= 0) {
 		close(m_iListenFd);
 	}
+	for (auto *pSubReactor : m_vecSubReactor) {
+		if (pSubReactor) {
+			delete pSubReactor;
+			pSubReactor = nullptr;
+		}
+	}
 }
 
 void MainReactor::Run(bool bUseCaller/* = false*/) {
 	// 启动子响应器
-	for (auto &oSubReactor : m_vecSubReactor) {
-		oSubReactor.Run();
+	std::cout << "start subreactor.." << std::endl;
+	for (auto *pSubReactor : m_vecSubReactor) {
+		pSubReactor->Run();
 	}
+	std::cout << "start mainreactor.." << std::endl;
 	CoroutinePool::Run(bUseCaller);
 }
 
@@ -69,29 +77,34 @@ void MainReactor::InitCoroutines() {
 void MainReactor::AcceptCoroutine() {
 	// WARN("in accept coroutine, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
 	while (true) {
+		std::string sLog;
+		for (int i = 0; i < m_vecSubReactor.size(); i++) {
+			sLog += StrFormat("%d,%d;", i, m_vecSubReactor[i]->GetConnectNum());
+		}
+		INFO("sub reactor conn status: %s", sLog.c_str());
 		// WARN("in accept coroutine pos 2, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
 		// static int iTestCount = 0;
 		// INFO("TEST: accept coroutine running, tick %d", iTestCount++);
 		int iFd = accept(m_iListenFd, nullptr, nullptr);
 		if (iFd < 0) {
-			INFO("ret %d, errno %d, errmsg %s", iFd, errno, strerror(errno));
+			// INFO("ret %d, errno %d, errmsg %s", iFd, errno, strerror(errno));
 			CoroutinePool::GetThis()->WaitFdEventWithTimeout(m_iListenFd, EPOLLIN, 1000);
 			// WARN("in accept coroutine pos 3, this %p CoSemaphore count %d", this, m_oCoSemaphore.GetCount());
 			continue;
 		}
 		INFO("conn succ. fd %d", iFd);
 		SetNonBlock(iFd);
-		INFO("core ??? 1");
+		// INFO("core ??? 1");
 		int iMin = INT32_MAX, iIndex = -1;
 		for (int i = 0; i < m_vecSubReactor.size(); i++) {
-			int iConnectNum = m_vecSubReactor[i].GetConnectNum();
+			int iConnectNum = m_vecSubReactor[i]->GetConnectNum();
 			if (iConnectNum < iMin) {
 				iMin = iConnectNum;
 				iIndex = i;
 			}
 		}
-		m_vecSubReactor[iIndex].AddFd(iFd);
-		INFO("core ??? 2");
+		m_vecSubReactor[iIndex]->AddFd(iFd);
+		// INFO("core ??? 2");
 	}
 }
 

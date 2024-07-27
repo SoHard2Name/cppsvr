@@ -7,21 +7,24 @@ int iFailCount = 0, connerr = 0;
 
 class TestClient : public cppsvr::CoroutinePool {
 public:
-	TestClient() : CoroutinePool(200) {
-	}
+	TestClient(uint32_t iWorkerCoroutineNum = cppsvr::CppSvrConfig::GetSingleton()->GetWorkerCoroutineNum()) : 
+			CoroutinePool(), m_iWorkerCoroutineNum(iWorkerCoroutineNum) {}
 	~TestClient() {
-		MUST_WAIT_THREAD_IN_EVERY_SON_CLASS_INHERITED_FROM_COROUTINEPOOL_DESTRCUTOR_FIRST_LINE
+		WaitThreadRunEnd();
 	}
 
 	void InitCoroutines() {
-		assert(m_iWorkerCoroutineNum >= 2);
-		m_vecCoroutine[1] = new cppsvr::Coroutine(Report);
+		InitLogReporterCoroutine();
+		m_vecCoroutine.push_back(new cppsvr::Coroutine(Report));
 		m_vecCoroutine[1]->SwapIn();
-		for (int i = 2; i < m_iWorkerCoroutineNum; i++) {
-			m_vecCoroutine[i] = new cppsvr::Coroutine(ClientCoroutine);
-			m_vecCoroutine[i]->SwapIn();
+		for (int i = 0; i < m_iWorkerCoroutineNum; i++) {
+			m_vecCoroutine.push_back(new cppsvr::Coroutine(ClientCoroutine));
 		}
+		AllCoroutineStart();
 	}
+	
+private:
+	uint32_t m_iWorkerCoroutineNum;
 	
 private:
 
@@ -103,7 +106,7 @@ private:
 
 
 int main() {
-	TestClient().Run();
+	TestClient(300).Run();
 	
 	return 0;
 }

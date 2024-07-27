@@ -2,7 +2,6 @@
 #include "cppsvr/commfunctions.h"
 #include "atomic"
 #include "cstring"
-#include "coroutinepool.h"
 
 namespace cppsvr {
 
@@ -48,7 +47,7 @@ void CoroutinePool::DefaultPrepare(TimeEvent::ptr pTimeEvent) {
 }
 
 void CoroutinePool::DefaultProcess(Coroutine* pCoroutine) {
-	INFO("???? here right?");
+	// INFO("???? here right?");
 	pCoroutine->SwapIn();
 }
 
@@ -62,7 +61,7 @@ void CoroutinePool::WaitFdEventWithTimeout(int iFd, int iEpollEvent, uint32_t iR
 		epoll_event oEpollEvent = {};
 		oEpollEvent.events = iEpollEvent | EPOLLET;
 		oEpollEvent.data.ptr = &pTimeEvent;
-		INFO("HERE?!!!!!!!");
+		// INFO("HERE?!!!!!!!");
 		int iRet = epoll_ctl(GetThis()->m_iEpollFd, EPOLL_CTL_ADD, iFd, &oEpollEvent);
 		if (iRet) {
 			ERROR("EPOLL_CTL_ADD error. errno %d, errmsg %s", errno, strerror(errno));
@@ -70,7 +69,7 @@ void CoroutinePool::WaitFdEventWithTimeout(int iFd, int iEpollEvent, uint32_t iR
 	}
 	DEBUG("TEST: one coroutine will swap out and wait");
 	Coroutine::GetThis()->SwapOut();
-	INFO("TEST: one routine swap in and continue");
+	// INFO("TEST: one routine swap in and continue");
 	if (iFd != -1) {
 		int iRet = epoll_ctl(GetThis()->m_iEpollFd, EPOLL_CTL_DEL, iFd, nullptr);
 		if (iRet) {
@@ -104,7 +103,7 @@ void CoroutinePool::Run(bool bUseCaller/* = false*/) {
 }
 
 void CoroutinePool::InitLogReporterCoroutine() {
-	m_vecCoroutine.push_back(new Coroutine(std::bind(LogReporterCoroutine, this)));
+	m_vecCoroutine.push_back(new Coroutine(std::bind(&CoroutinePool::LogReporterCoroutine, this)));
 }
 
 void CoroutinePool::LogReporterCoroutine() {
@@ -161,20 +160,20 @@ void CoroutinePool::ThreadRun() {
 		// if (m_listActiveEvent.size() > 0) {
 		// 	std::cout << "m_listActiveEvent size > 0 : " << m_listActiveEvent.size() << std::endl;
 		// }
-		for (auto it = m_listActiveEvent.begin(); it != m_listActiveEvent.end(); ++it, INFO("???... it %p", it->get()) ) {
-			INFO("wht....");
+		for (auto it = m_listActiveEvent.begin(); it != m_listActiveEvent.end(); ++it/*, INFO("???... it %p", it->get())*/ ) {
+			// INFO("wht....");
 			auto pTimeEvent = *it;
-			INFO("wht....333");
+			// INFO("wht....333");
 			if (pTimeEvent->m_funProcess) {
-				INFO("wht....6666");
+				// INFO("wht....6666");
 				pTimeEvent->m_funProcess();
-				INFO("son swap out and turn to father");
+				// INFO("son swap out and turn to father");
 			}
-			INFO("到这里是没问题的。。pTimeEvent use count %ld", pTimeEvent.use_count());
+			// INFO("到这里是没问题的。。pTimeEvent use count %ld", pTimeEvent.use_count());
 		}
-		INFO("why stop..");
+		// INFO("why stop..");
 		m_listActiveEvent.clear();
-		INFO("why stop..2");
+		// INFO("why stop..2");
 	}
 	if (pEpollEvents) {
 		delete []pEpollEvents;
@@ -245,7 +244,7 @@ int CoroutinePool::Write(int iFd, std::string &sMessage, uint32_t iRelativeTimeo
 	uint64_t iNow = GetCurrentTimeMs(), iTimeOut = iNow + iRelativeTimeout;
 	while ((iNow = GetCurrentTimeMs()) < iTimeOut && iWrotenLen < sMessage.length()) {
 		int iRet = write(iFd, sMessage.c_str() + iWrotenLen, sMessage.length() - iWrotenLen);
-		INFO("write iRet = %d", iRet);
+		// INFO("write iRet = %d", iRet);
 		if (iRet < 0) {
 			if (errno == EAGAIN) {
 				DEBUG("write fail and EAGAIN...");

@@ -36,6 +36,8 @@ class Logger { // 实现为单例模式
 	SINGLETON(Logger);
 	
 public:
+	typedef std::pair<uint64_t, std::string> log_line;
+	typedef std::list<log_line> log_buf;
 	enum Level {
 		LOG_UNKNOW = 0,
 		LOG_DEBUG,
@@ -51,7 +53,7 @@ public:
 	void Log(Level eLevel, const char *sFile, int iLine, const char *sFormat, ...)
 		__attribute__((format(printf, 5, 6))); // file、line 分别为记录处所在的文件和行号
 
-	static std::list<std::pair<uint64_t, std::string>> &GetThisLogBuffer();
+	static log_buf &GetThisLogBuffer();
 	static void PushLogToGlobalBuffer();
 	static void PullLogFromGlobalBuffer();
 	void StoreLogToDiskFile();

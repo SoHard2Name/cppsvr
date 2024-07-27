@@ -1,7 +1,6 @@
 #include "cppsvr/subreactor.h"
 #include "cppsvr/commfunctions.h"
 #include "cstring"
-#include "subreactor.h"
 
 namespace cppsvr {
 
@@ -41,7 +40,7 @@ int SubReactor::GetConnectNum() {
 }
 
 void SubReactor::InitCoroutines() {
-	INFO("begin InitCoroutines ... ");
+	// INFO("begin InitCoroutines ... ");
 	// 把日志推到全局缓冲区。
 	InitLogReporterCoroutine();
 	// 专门将 fd 从 buffer 转移到 fdlist，并唤醒工作协程
