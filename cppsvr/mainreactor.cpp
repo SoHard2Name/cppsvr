@@ -15,6 +15,7 @@ namespace cppsvr {
 
 MainReactor::MainReactor(uint32_t iWorkerThreadNum/* = 配置数*/, 
 		uint32_t iWorkerCoroutineNum/* = 配置数*/) : m_iListenFd(-1) {
+
 	m_iListenFd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	assert(m_iListenFd >= 0);
 	SetNonBlock(m_iListenFd);
@@ -29,10 +30,6 @@ MainReactor::MainReactor(uint32_t iWorkerThreadNum/* = 配置数*/,
 		int iReuseaddrOpt = 1;
 		assert(!setsockopt(m_iListenFd, SOL_SOCKET, SO_REUSEADDR, &iReuseaddrOpt, sizeof(iReuseaddrOpt)));
 	}
-	// // 这个是设置单个端口可以被多个 fd 绑定，这样不用让多个线程监听同一
-	// // 个 fd 发生太多由于锁导致的线程切换，而是底层会自己分配 syn 请求。
-	// int iReuseportOpt = 1;
-	// assert(!setsockopt(m_iListenFd, SOL_SOCKET, SO_REUSEPORT, &iReuseportOpt, sizeof(iReuseportOpt)));
 	assert(!bind(m_iListenFd, (struct sockaddr *)&oAddr, sizeof(oAddr)));
 	INFO("bind succ. fd %d", m_iListenFd);
 	assert(!listen(m_iListenFd, 128));
