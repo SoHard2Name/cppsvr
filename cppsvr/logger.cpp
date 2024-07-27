@@ -45,8 +45,8 @@ void Logger::PullLogFromGlobalBuffer() {
 void Logger::StoreLogToDiskFile() {
 	uint64_t iNowMs = GetCurrentTimeMs();
 	for (auto it = t_listLogBuffer.begin(); it != t_listLogBuffer.end(); t_listLogBuffer.erase(it++)) {
-		// 保住这个区域，就能保证输出的日志都是有序的！本来不 +10 就是可以的，只不过考虑到前期可能有一点误差。
-		if (it->first + CppSvrConfig::GetSingleton()->GetFlushInterval() + 10 >= iNowMs) {
+		// 保住这个区域，就能保证输出的日志都是有序的！
+		if (it->first + CppSvrConfig::GetSingleton()->GetFlushInterval() >= iNowMs) {
 			break;
 		}
 		const auto &sLog = it->second;

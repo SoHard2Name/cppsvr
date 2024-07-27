@@ -50,13 +50,12 @@ MainReactor::~MainReactor() {
 	}
 }
 
-void MainReactor::Run() {
+void MainReactor::Run(bool bUseCaller/* = false*/) {
 	// 启动子响应器
 	for (auto &oSubReactor : m_vecSubReactor) {
 		oSubReactor.Run();
 	}
-	// 启动自己，并且用上当前线程
-	CoroutinePool::Run(true);
+	CoroutinePool::Run(bUseCaller);
 }
 
 void MainReactor::InitCoroutines() {

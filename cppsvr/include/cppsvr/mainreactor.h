@@ -15,7 +15,7 @@ public:
 				uint32_t iWorkerCoroutineNum = cppsvr::CppSvrConfig::GetSingleton()->GetWorkerCoroutineNum());
 	~MainReactor();
 
-	void Run();
+	virtual void Run(bool bUseCaller = false) override;
 	virtual void InitCoroutines() override;
 
 private:
