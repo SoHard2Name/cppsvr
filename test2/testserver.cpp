@@ -8,7 +8,7 @@ void TestService(const std::string &sReq, std::string &sResp) {
 int main() {
 	cppsvr::SubReactor::RegisterService(1, TestService);
 	cppsvr::MainReactor oMainReactor;
-	oMainReactor.Run();
-	
+	oMainReactor.Run(true);
+
 	return 0;
 }
