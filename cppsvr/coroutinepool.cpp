@@ -47,7 +47,6 @@ void CoroutinePool::DefaultPrepare(TimeEvent::ptr pTimeEvent) {
 }
 
 void CoroutinePool::DefaultProcess(Coroutine* pCoroutine) {
-	// INFO("???? here right?");
 	pCoroutine->SwapIn();
 }
 
@@ -110,6 +109,20 @@ void CoroutinePool::LogReporterCoroutine() {
 	while (true) {
 		DEBUG("PushLogToGlobalBuffer ...");
 		Logger::PushLogToGlobalBuffer();
+		Coroutine::GetThis()->SwapOut();
+	}
+}
+
+void CoroutinePool::InitStoreLogCoroutine() {
+	m_vecCoroutine.push_back(new Coroutine(std::bind(&CoroutinePool::StoreLogCoroutine, this)));
+}
+
+void CoroutinePool::StoreLogCoroutine() {
+	uint32_t iFlushInterval = CppSvrConfig::GetSingleton()->GetFlushInterval();
+	Timer::GetThis()->AddRelativeTimeEvent(iFlushInterval, nullptr, std::bind(DefaultProcess, Coroutine::GetThis()), iFlushInterval);
+	while (true) {
+		Logger::PullLogFromGlobalBuffer();
+		Logger::GetSingleton()->StoreLogToDiskFile();
 		Coroutine::GetThis()->SwapOut();
 	}
 }

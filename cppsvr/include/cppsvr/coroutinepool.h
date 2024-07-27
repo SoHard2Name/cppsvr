@@ -41,6 +41,9 @@ protected:
 	// 日志直接的都是打在线程局部的缓冲区，汇总就是靠这个。
 	void InitLogReporterCoroutine();
 	void LogReporterCoroutine();
+	// 收集汇总的日志然后输出的协程
+	void InitStoreLogCoroutine();
+	void StoreLogCoroutine();
 
 private:
 	void ThreadRun();

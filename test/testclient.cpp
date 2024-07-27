@@ -14,7 +14,7 @@ public:
 	}
 
 	void InitCoroutines() {
-		InitLogReporterCoroutine();
+		InitStoreLogCoroutine();
 		m_vecCoroutine.push_back(new cppsvr::Coroutine(Report));
 		for (int i = 0; i < m_iWorkerCoroutineNum; i++) {
 			m_vecCoroutine.push_back(new cppsvr::Coroutine(ClientCoroutine));
@@ -32,12 +32,12 @@ private:
 		int iFd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		assert(iFd >= 0);
 		cppsvr::SetNonBlock(iFd);
-		struct sockaddr_in addr;
-		addr.sin_family = AF_INET;
-		addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-		addr.sin_port = htons(1335);
+		struct sockaddr_in oAddr;
+		oAddr.sin_family = AF_INET;
+		oAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+		oAddr.sin_port = htons(1335);
 		while (true) {
-			int iRet = connect(iFd, (struct sockaddr *)&addr, sizeof(sockaddr));
+			int iRet = connect(iFd, (struct sockaddr *)&oAddr, sizeof(sockaddr));
 			// errno == EALREADY 表示已经创建完连接了。
 			// errno == EINPROGRESS 表示连接正在建立中。
 			if (iRet && errno != EALREADY) {

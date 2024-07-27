@@ -60,7 +60,7 @@ void MainReactor::InitCoroutines() {
 	// 初始化 accept 协程
 	m_vecCoroutine.push_back(new Coroutine(std::bind(&MainReactor::AcceptCoroutine, this)));
 	// 初始化推日志到磁盘的协程（它也是把公共区域拿到本线程的区域然后再来处理）
-	m_vecCoroutine.push_back(new Coroutine(std::bind(&MainReactor::StoreLogCoroutine, this)));
+	InitStoreLogCoroutine();
 	AllCoroutineStart();
 }
 
@@ -88,16 +88,6 @@ void MainReactor::AcceptCoroutine() {
 			}
 		}
 		m_vecSubReactor[iIndex]->AddFd(iFd);
-	}
-}
-
-void MainReactor::StoreLogCoroutine() {
-	uint32_t iFlushInterval = CppSvrConfig::GetSingleton()->GetFlushInterval();
-	Timer::GetThis()->AddRelativeTimeEvent(iFlushInterval, nullptr, std::bind(DefaultProcess, Coroutine::GetThis()), iFlushInterval);
-	while (true) {
-		Logger::PullLogFromGlobalBuffer();
-		Logger::GetSingleton()->StoreLogToDiskFile();
-		Coroutine::GetThis()->SwapOut();
 	}
 }
 

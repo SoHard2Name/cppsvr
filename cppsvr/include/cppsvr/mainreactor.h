@@ -20,7 +20,6 @@ public:
 
 private:
 	void AcceptCoroutine();
-	void StoreLogCoroutine();
 
 private:
 	int m_iListenFd;
