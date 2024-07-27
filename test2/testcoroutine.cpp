@@ -18,3 +18,14 @@ int main() {
 	
 	return 0;
 }
+
+/*
+
+coroutine1 hello world # 1
+coroutine2 hello world # 2
+coroutine1 hello world # 3
+coroutine2 hello world # 4
+coroutine1 hello world # 5
+coroutine2 hello world # 6
+
+*/
