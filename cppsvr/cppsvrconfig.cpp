@@ -27,9 +27,11 @@ CppSvrConfig::CppSvrConfig(std::string sFileName) : ConfigBase(sFileName, false)
 // 虽然这里用到了日志器，但是上面已经创建完配置器，所以日志器能正常获取配置信息。
 void CppSvrConfig::LogConfigInfo() const {
 	INFO("config info: log file name %s, log max size %u, log console %d, "
-		 "log level %s[%d]. coroutine stack size %u", m_sLogFileName.c_str(), 
-		 m_iLogMaxSize, m_bLogConsole, m_sLogLevel.c_str(),
-		 m_eLogLevel, m_iCoroutineStackSize);
+		 "log level %s[%d], log flush interval %u, ip %s, port %d, reuse addr %d, "
+		 "worker thread num %u, worker coroutine num %u, coroutine stack size %u.", 
+		 m_sLogFileName.c_str(), m_iLogMaxSize, m_bLogConsole, m_sLogLevel.c_str(),
+		 m_eLogLevel, m_iFlushInterval, m_sIp, m_iPort, m_bReuseAddr, 
+		 m_iWorkerThreadNum, m_iWorkerCoroutineNum, m_iCoroutineStackSize);
 }
 
 const std::string &CppSvrConfig::GetLogFileName() const {
