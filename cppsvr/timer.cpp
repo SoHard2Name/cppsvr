@@ -69,7 +69,6 @@ void Timer::GetAllTimeoutEvent(std::list<TimeEvent::ptr> &listResult) {
 	uint32_t iCount = m_iCurrentTime - iPreTime + 1;
 	uint32_t iPreIndex = m_iCurrentIndex;
 	m_iCurrentIndex = (m_iCurrentIndex + iCount - 1) % m_vecTimeEvent.size();
-	DEBUG(".... iCount = %u", iCount);
 	// 必须分两步走，否则会造成死循环。
 	std::list<TimeEvent::ptr> listTemp; // 并且必须先弄到这里面，因为 listResult 本身是可能会有东西的。
 	for (int i = 0; i < iCount; i++) {

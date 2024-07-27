@@ -40,7 +40,7 @@ int SubReactor::GetConnectNum() {
 }
 
 void SubReactor::InitCoroutines() {
-	// INFO("begin InitCoroutines ... ");
+	// DEBUG("begin InitCoroutines ... ");
 	// 把日志推到全局缓冲区。
 	InitLogReporterCoroutine();
 	// 专门将 fd 从 buffer 转移到 fdlist，并唤醒工作协程
@@ -61,9 +61,9 @@ void SubReactor::WorkerCoroutine() {
 		m_oCoSemaphore.Wait();
 		int iFd = m_listFd.front();
 		m_listFd.pop_front();
-		// TODO: 改成根据连接超时来弄循环，这样能关闭那些太久没有通信的连接。如果有交流则更新超时时间。
+		// TODO: 改成根据连接超时来弄循环，这样能关闭那些
+		// 太久没有通信的连接。如果有交流则更新超时时间。
 		while (true) {
-			DEBUG("TEST: one service.");
 			std::string sReq;
 			int iRet = Read(iFd, sReq);
 			if (iRet != 0) {
@@ -90,7 +90,6 @@ void SubReactor::WorkerCoroutine() {
 		m_iConnectNum--;
 	}
 	if (pBuffer != nullptr) {
-		std::cout << "这里来两次？？？" << std::endl;
 		free(pBuffer);
 		pBuffer = nullptr;
 	}

@@ -56,20 +56,18 @@ void CoroutinePool::WaitFdEventWithTimeout(int iFd, int iEpollEvent, uint32_t iR
 						nullptr, std::bind(&DefaultProcess, Coroutine::GetThis()));
 	pTimeEvent->m_funPrepare = std::bind(&DefaultPrepare, pTimeEvent);
 	GetThis()->m_oTimer.AddTimeEvent(pTimeEvent);
-	DEBUG("TEST: pTimeEvent belong list %d", pTimeEvent->m_iBelongList);
 	if (iFd != -1) {
 		epoll_event oEpollEvent = {};
 		oEpollEvent.events = iEpollEvent | EPOLLET;
 		oEpollEvent.data.ptr = &pTimeEvent;
-		// INFO("HERE?!!!!!!!");
 		int iRet = epoll_ctl(GetThis()->m_iEpollFd, EPOLL_CTL_ADD, iFd, &oEpollEvent);
 		if (iRet) {
 			ERROR("EPOLL_CTL_ADD error. errno %d, errmsg %s", errno, strerror(errno));
 		}
 	}
-	DEBUG("TEST: one coroutine will swap out and wait");
+	// DEBUG("one coroutine will swap out and wait");
 	Coroutine::GetThis()->SwapOut();
-	// INFO("TEST: one routine swap in and continue");
+	// DEBUG("one routine swap in and continue");
 	if (iFd != -1) {
 		int iRet = epoll_ctl(GetThis()->m_iEpollFd, EPOLL_CTL_DEL, iFd, nullptr);
 		if (iRet) {
@@ -110,6 +108,7 @@ void CoroutinePool::LogReporterCoroutine() {
 	uint32_t iFlushInterval = CppSvrConfig::GetSingleton()->GetFlushInterval();
 	Timer::GetThis()->AddRelativeTimeEvent(iFlushInterval, nullptr, std::bind(DefaultProcess, Coroutine::GetThis()), iFlushInterval);
 	while (true) {
+		DEBUG("PushLogToGlobalBuffer ...");
 		Logger::PushLogToGlobalBuffer();
 		Coroutine::GetThis()->SwapOut();
 	}
@@ -124,17 +123,13 @@ void CoroutinePool::ThreadRun() {
 	// 初始化各个协程。
 	InitCoroutines();
 	// 事件循环
-	INFO("init coroutines end. begin event loop...");
+	DEBUG("init coroutines end. begin event loop...");
 	const int iEventsSize = 1024, iWaitTimeMs = 100; // 毫秒级的定时器
 	epoll_event *pEpollEvents = new epoll_event[iEventsSize];
 	memset(pEpollEvents, 0, sizeof(epoll_event) * iEventsSize);
 	while (true) {
-		// std::cout << "??? \n";
 		int iRet = epoll_wait(m_iEpollFd, pEpollEvents, iEventsSize, iWaitTimeMs);
-		// INFO("epoll wait ret = %d", iRet);
-		// if (iRet != 0) {
-		// 	std::cout << "iRet is not zero: " << iRet << std::endl;
-		// }
+		// DEBUG("epoll wait ret = %d", iRet);
 		if (iRet < 0) {
 			if (errno != EINTR) {
 				ERROR("epoll_wait error. ret %d", iRet);
@@ -154,26 +149,15 @@ void CoroutinePool::ThreadRun() {
 				}
 			}
 		}
-		DEBUG("can come here.");
 		m_oTimer.GetAllTimeoutEvent(m_listActiveEvent);
-		// INFO("end get time out, m_listActiveEvent size %zu", m_listActiveEvent.size());
-		// if (m_listActiveEvent.size() > 0) {
-		// 	std::cout << "m_listActiveEvent size > 0 : " << m_listActiveEvent.size() << std::endl;
-		// }
-		for (auto it = m_listActiveEvent.begin(); it != m_listActiveEvent.end(); ++it/*, INFO("???... it %p", it->get())*/ ) {
-			// INFO("wht....");
+		// DEBUG("end get time out, m_listActiveEvent size %zu", m_listActiveEvent.size());
+		for (auto it = m_listActiveEvent.begin(); it != m_listActiveEvent.end(); ++it) {
 			auto pTimeEvent = *it;
-			// INFO("wht....333");
 			if (pTimeEvent->m_funProcess) {
-				// INFO("wht....6666");
 				pTimeEvent->m_funProcess();
-				// INFO("son swap out and turn to father");
 			}
-			// INFO("到这里是没问题的。。pTimeEvent use count %ld", pTimeEvent.use_count());
 		}
-		// INFO("why stop..");
 		m_listActiveEvent.clear();
-		// INFO("why stop..2");
 	}
 	if (pEpollEvents) {
 		delete []pEpollEvents;
@@ -192,10 +176,10 @@ int CoroutinePool::Read(int iFd, std::string &sMessage, uint32_t iRelativeTimeou
 	uint64_t iNow = GetCurrentTimeMs(), iTimeOut = iNow + iRelativeTimeout;
 	while ((iNow = GetCurrentTimeMs()) < iTimeOut) {
 		int iRet = read(iFd, pBuffer, g_iBufferSize);
-		DEBUG("read iRet = %d", iRet);
+		// DEBUG("read iRet = %d", iRet);
 		if (iRet < 0) {
 			if (errno == EAGAIN) {
-				DEBUG("ret = -1 but is here");
+				// DEBUG("ret = -1 but errno is EAGAIN");
 				CoroutinePool::GetThis()->WaitFdEventWithTimeout(iFd, EPOLLIN, iTimeOut - iNow);
 				continue;
 			} else {
@@ -213,16 +197,15 @@ int CoroutinePool::Read(int iFd, std::string &sMessage, uint32_t iRelativeTimeou
 		sMessage += std::string(pBuffer, pBuffer + iRet);
 		memset(pBuffer, 0, iRet);
 		// 暂时定下协议是：4 字节消息体长度 + 消息体。（关于 req id 可以在消息体里面再定）
-		// TODO: 消息正确性有 tcp 包着了，自己没必要再验证。
 		std::string sLog;
 		for (char c : sMessage) {
 			sLog += "_" + std::to_string((int)c);
 		}
-		DEBUG("sMessage: [%s], len %zu", sLog.c_str(), sMessage.size());
+		// DEBUG("sMessage: [%s], len %zu", sLog.c_str(), sMessage.size());
 		if (bHasReceiveHead == false && sMessage.length() >= 4) {
 			bHasReceiveHead = true;
 			iMessageLen = ByteStr2UInt(sMessage.substr(0, 4));
-			DEBUG("iMessageLen: %u", iMessageLen);
+			// DEBUG("iMessageLen: %u", iMessageLen);
 			sMessage.erase(0, 4);
 		}
 		if (bHasReceiveHead == true && sMessage.length() >= iMessageLen) {
@@ -237,21 +220,20 @@ int CoroutinePool::Read(int iFd, std::string &sMessage, uint32_t iRelativeTimeou
 }
 
 int CoroutinePool::Write(int iFd, std::string &sMessage, uint32_t iRelativeTimeout/* = -1*/) {
-	// std::cout << "你们在干啥。。" << std::endl;
 	uint32_t iWrotenLen = 0;
 	sMessage = UInt2ByteStr(sMessage.length()) + sMessage;
 	int iResult = -1;
 	uint64_t iNow = GetCurrentTimeMs(), iTimeOut = iNow + iRelativeTimeout;
 	while ((iNow = GetCurrentTimeMs()) < iTimeOut && iWrotenLen < sMessage.length()) {
 		int iRet = write(iFd, sMessage.c_str() + iWrotenLen, sMessage.length() - iWrotenLen);
-		// INFO("write iRet = %d", iRet);
+		// DEBUG("write iRet = %d", iRet);
 		if (iRet < 0) {
 			if (errno == EAGAIN) {
-				DEBUG("write fail and EAGAIN...");
+				// DEBUG("write fail but EAGAIN");
 				CoroutinePool::GetThis()->WaitFdEventWithTimeout(iFd, EPOLLOUT, iTimeOut - iNow);
 				continue;
 			} else {
-				ERROR("write fail finally.. fd %d, errno %d, errmsg %s", iFd, errno, strerror(errno));
+				ERROR("write fail finally. fd %d, errno %d, errmsg %s", iFd, errno, strerror(errno));
 				iResult = 1;
 				break;
 			}
@@ -263,7 +245,7 @@ int CoroutinePool::Write(int iFd, std::string &sMessage, uint32_t iRelativeTimeo
 		}
 	}
 	if (iWrotenLen >= sMessage.length()) {
-		DEBUG("write succ! fd %d", iFd);
+		// DEBUG("write succ! fd %d", iFd);
 		return 0;
 	}
 	close(iFd);

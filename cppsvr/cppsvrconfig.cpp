@@ -30,7 +30,7 @@ void CppSvrConfig::LogConfigInfo() const {
 		 "log level %s[%d], log flush interval %u, ip %s, port %d, reuse addr %d, "
 		 "worker thread num %u, worker coroutine num %u, coroutine stack size %u.", 
 		 m_sLogFileName.c_str(), m_iLogMaxSize, m_bLogConsole, m_sLogLevel.c_str(),
-		 m_eLogLevel, m_iFlushInterval, m_sIp, m_iPort, m_bReuseAddr, 
+		 m_eLogLevel, m_iFlushInterval, m_sIp.c_str(), m_iPort, m_bReuseAddr, 
 		 m_iWorkerThreadNum, m_iWorkerCoroutineNum, m_iCoroutineStackSize);
 }
 

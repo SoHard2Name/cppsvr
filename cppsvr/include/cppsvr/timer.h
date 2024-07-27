@@ -10,7 +10,6 @@ namespace cppsvr {
 struct TimeEvent {
 	typedef std::shared_ptr<TimeEvent> ptr;
 	TimeEvent(std::function<void()> funProcess);
-	// TimeEvent(std::function<void()> funPrepare, std::function<void()> funProcess);
 	TimeEvent(uint64_t iExpireTime, std::function<void()> funPrepare, std::function<void()> funProcess, uint32_t iInterval = 0);
 	uint64_t m_iExpireTime = UINT64_MAX; // 期待触发的准确时间戳
 	std::function<void()> m_funPrepare = nullptr; // 就绪才会触发（主要就是提前取消超时事件）

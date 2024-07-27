@@ -44,7 +44,7 @@ void Logger::PullLogFromGlobalBuffer() {
 void Logger::StoreLogToDiskFile() {
 	uint64_t iNowMs = GetCurrentTimeMs();
 	for (auto it = t_listLogBuffer.begin(); it != t_listLogBuffer.end(); t_listLogBuffer.erase(it++)) {
-		// 保住这个区域，就能保证输出的日志都是有序的！
+		// 保住这个区域，就能保证输出的日志都是有序的！+ 100 为了防止有些虽然轮到了但还得稍微等一会再处理的协程。
 		if (it->first + CppSvrConfig::GetSingleton()->GetFlushInterval() + 100 >= iNowMs) {
 			break;
 		}
@@ -124,7 +124,6 @@ void Logger::CloseFile() {
 
 void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char *sFormat, ...) {
 	if (m_eLevel > eLevel) return; // 等级低于日志等级的消息不做记录
-	// assert(!m_oOutFileStream.fail());
 	std::ostringstream oss;
 	
 	uint64_t iNowMs = GetCurrentTimeMs();
@@ -140,25 +139,6 @@ void Logger::Log(Logger::Level eLevel, const char *sFile, int iLine, const char 
 	
 	oss << "\n";
 	GetThisLogBuffer().emplace_back(iNowMs, std::move(oss.str()));
-
-	// const std::string &sTemp = oss.str();
-
-	// { // 写进日志文件
-	// 	Mutex::ScopedLock oLogLock(m_oMutex);
-	// 	m_oOutFileStream << sTemp;
-	// 	m_iCurrentLen += sTemp.length();
-
-	// 	// 这样才能更新到磁盘上，待会一打开文件就能看到最新结果。
-	// 	m_oOutFileStream.flush();
-
-	// 	if (m_iMaxSize > 0 && m_iCurrentLen >= m_iMaxSize) {
-	// 		Rotate();
-	// 	}
-	// }
-	
-	// if (m_bConsole) {
-	// 	std::cout << sTemp;
-	// }
 }
 
 void Logger::Rotate() { // 这个函数外已经有加锁了。

@@ -65,7 +65,6 @@ void Coroutine::DoWork(Coroutine *pCoroutine) {
 		pCoroutine->m_funUserFunc();
 		pCoroutine->m_funUserFunc = nullptr;
 	}
-	INFO("???why..");
 	pCoroutine->SwapOut();
 	ERROR("coroutine can not come here.");
 	assert(0);
@@ -89,7 +88,6 @@ void Coroutine::SwapIn() {
 void Coroutine::SwapOut() {
 	assert(m_pFather);
 	SetThis(m_pFather);
-	// INFO("????why...");
 	CoSwap(&m_oContext, &m_pFather->m_oContext);
 }
 

@@ -15,8 +15,6 @@
 #include "configbase.h"
 #include "list"
 
-// TODO: 每个线程有一个协程是专门、定时处理日志的；有一个线程是专门把日志输出到文件的。
-
 namespace cppsvr {
 
 // 因为这些宏是在全局用到的，所以就都要加“cppsvr::”
