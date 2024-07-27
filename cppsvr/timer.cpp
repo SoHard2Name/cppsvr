@@ -9,9 +9,6 @@ thread_local Timer *t_pCurrentTimer = nullptr;
 
 TimeEvent::TimeEvent(std::function<void()> funProcess) : m_funProcess(std::move(funProcess)) {}
 
-// TimeEvent::TimeEvent(std::function<void()> funPrepare, std::function<void()> funProcess)
-// 		: m_funPrepare(std::move(funPrepare)), m_funProcess(std::move(funProcess)) {}
-
 TimeEvent::TimeEvent(uint64_t iExpireTime, std::function<void()> funPrepare,
 					 std::function<void()> funProcess, uint32_t iInterval /* = 0*/)
 	: m_iExpireTime(iExpireTime), m_funPrepare(std::move(funPrepare)), m_funProcess(std::move(funProcess)),
@@ -41,7 +38,11 @@ TimeEvent::ptr Timer::AddTimeEvent(TimeEvent::ptr pTimeEvent) {
 		m_iCurrentIndex = 0;
 	}
 	if (pTimeEvent->m_iExpireTime < m_iCurrentTime) {
-		ERROR("event expire time is smaller than now");
+		if (pTimeEvent->m_iInterval > 0) {
+			pTimeEvent->m_iExpireTime = m_iCurrentTime + 1;
+		} else {
+			ERROR("event expire time is smaller than now");
+		}
 		return pTimeEvent;
 	}
 	uint32_t iSize = m_vecTimeEvent.size();
