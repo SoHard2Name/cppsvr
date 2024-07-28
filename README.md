@@ -1,4 +1,5 @@
 - [高性能 C++ 服务器](#高性能-c-服务器)
+	- [特别声明](#特别声明)
 	- [实现了什么](#实现了什么)
 		- [日志器](#日志器)
 		- [配置器](#配置器)
@@ -18,7 +19,9 @@
 
 # 高性能 C++ 服务器
 
-> github 上的 [`EscapeFromEarth`](https://github.com/EscapeFromEarth)、[`SoHard2Name`](https://github.com/SoHard2Name)、[`abcpony`](https://github.com/abcpony)，都是我本人，就是偶尔换来换去而已，项目是本人独立完成的。
+## 特别声明
+
+github 上的 [`EscapeFromEarth`](https://github.com/EscapeFromEarth)、[`SoHard2Name`](https://github.com/SoHard2Name)、[`abcpony`](https://github.com/abcpony)，都是我本人，就是偶尔换来换去而已，项目是本人独立完成的。
 
 作者 `QQ`：`2490273063`
 
@@ -141,9 +144,15 @@ static void Report() {
 
 ### protobuf
 
-使用上兼容性超强、性能不错的 `protobuf` 来方便客户端和服务端之间的通信，实现更复杂的服务。
+> 之前学习 `protobuf` 反射、实现 `pb` 和 `json` 互转的[记录](https://github.com/EscapeFromEarth/testBazel_Protobuf)。
+>
+> 当然本项目如果用上 `protobuf`，主要还是用它简单的序列化和反序列化操作。除非后面要弄成 `web` 服务器之类的，需要用到 `json` 时候才会用上上面这套。
+
+使用上使用方便、兼容性超强、性能不错的 `protobuf` 来方便客户端和服务端之间的通信，实现更复杂的服务。
 
 ### docker
+
+> 之前学习 `docker` 基础操作的[记录](https://github.com/EscapeFromEarth/test_docker)。
 
 把这些东西用 `docker` 打包起来，方便部署。
 
