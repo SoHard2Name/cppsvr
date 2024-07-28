@@ -1,10 +1,10 @@
 - [高性能 C++ 服务器](#高性能-c-服务器)
-	- [特别声明](#特别声明)
+	- [特别声明！！](#特别声明)
 	- [实现了什么](#实现了什么)
 		- [日志器](#日志器)
 		- [配置器](#配置器)
 		- [线程类封装](#线程类封装)
-		- [多协程](#多协程)
+		- [多协程（重点）](#多协程重点)
 			- [协程](#协程)
 			- [协程池](#协程池)
 				- [定时器](#定时器)
@@ -19,7 +19,7 @@
 
 # 高性能 C++ 服务器
 
-## 特别声明
+## <font color="red">特别声明！！</font>
 
 github 上的 [`EscapeFromEarth`](https://github.com/EscapeFromEarth)、[`SoHard2Name`](https://github.com/SoHard2Name)、[`abcpony`](https://github.com/abcpony)，都是我本人，就是偶尔换来换去而已，项目是本人独立完成的。
 
@@ -72,7 +72,7 @@ cppsvr::Mutex oMutex;
 } // 出了这里自动解锁
 ```
 
-### <font color='red'>多协程</font>
+### 多协程（重点）
 
 #### 协程
 
